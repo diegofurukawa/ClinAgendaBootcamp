@@ -228,3 +228,5 @@ AppPackages/
 #####
 # End of core ignore list, below put you custom 'per project' settings (patterns or path)
 #####
+obj/Debug/net8.0/ClinAgendaBootcamp.AssemblyInfo.cs
+obj/Debug/net8.0/ClinAgendaBootcamp.AssemblyInfoInputs.cache

@@ -3,6 +3,7 @@ using ClinAgendaBootcamp.src.Infrastructure.Repositories;
 using ClinAgendaBootcamp.src.Application.UseCases;
 using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
 using MySql.Data.MySqlClient;
+using ClinAgendaBootcamp.src.Application.PatientUseCase;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +26,10 @@ builder.Services.AddScoped<StatusUseCase>();
 builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
 builder.Services.AddScoped<SpecialtyUseCase>();
 
+
+// Patient
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<PatientUseCase>();
 
 var app = builder.Build();
 

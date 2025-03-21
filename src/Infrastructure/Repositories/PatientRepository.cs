@@ -4,109 +4,194 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ClinAgendaBootcamp.src.Application.DTOs.Patient;
+using ClinAgendaBootcamp.src.Application.DTOs.Status;
 using ClinAgendaBootcamp.src.Core.Interfaces;
 using Dapper;
 using MySql.Data.MySqlClient;
 
-
 namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 {
-    // Implementação do repositório de Patient, seguindo a interface IPatientRepository.
     public class PatientRepository : IPatientRepository
     {
-        private readonly MySqlConnection _connection; // Conexão com o banco de dados.
+        // Conexão com o banco pode ser acessada pelo UseCase para validações
+public readonly MySqlConnection _connection;
 
-        // Construtor que recebe a conexão com o banco de dados via injeção de dependência.
         public PatientRepository(MySqlConnection connection)
         {
             _connection = connection;
         }
 
-        // Método assíncrono para buscar um Patient pelo ID.
         public async Task<PatientDTO> GetPatientByIdAsync(int id)
         {
-            // Query SQL para selecionar o Patient pelo ID.
             string query = @"
-            SELECT ID, 
-                   NAME 
-            FROM patient
-            WHERE ID = @Id";
+                SELECT 
+                    p.id,
+                    p.name,
+                    p.phonenumber,
+                    p.documentnumber,
+                    p.birthdate,
+                    p.statusid
+                FROM patient p
+                WHERE p.id = @Id";
 
-            var parameters = new { Id = id }; // Parâmetro da query.
-
-            // Executa a consulta no banco e retorna o primeiro resultado ou null caso não encontre.
+            var parameters = new { Id = id };
+            
             var patient = await _connection.QueryFirstOrDefaultAsync<PatientDTO>(query, parameters);
-
-            return patient; // Retorna o Patient encontrado.
+            
+            return patient;
         }
 
-        // Método assíncrono para excluir um Patient pelo ID.
         public async Task<int> DeletePatientAsync(int id)
         {
-            // Query SQL para deletar um Patient pelo ID.
             string query = @"
-            DELETE FROM patient
-            WHERE ID = @Id";
+                DELETE FROM patient
+                WHERE id = @Id";
 
-            var parameters = new { Id = id }; // Parâmetro da query.
-
-            // Executa a query e retorna o número de linhas afetadas.
-            var rowsAffected = await _connection.ExecuteAsync(query, parameters);
-
-            return rowsAffected; // Retorna quantas linhas foram afetadas (1 se deletou, 0 se não encontrou o ID).
+            var parameters = new { Id = id };
+            
+            return await _connection.ExecuteAsync(query, parameters);
         }
 
-        // Método assíncrono para inserir um novo Patient no banco.
-        public async Task<int> InsertPatientAsync(PatientInsertDTO PatientInsertDTO)
+        public async Task<int> InsertPatientAsync(PatientInsertDTO patientInsertDTO)
         {
-            // Query SQL para inserir um novo Patient e obter o ID gerado.
-            string query = @"
-            INSERT INTO patient (NAME) 
-            VALUES (@Name);
-            SELECT LAST_INSERT_ID();"; // Obtém o ID do último registro inserido.
-
-            // Executa a query e retorna o ID do novo Patient.
-            return await _connection.ExecuteScalarAsync<int>(query, PatientInsertDTO);
+            try
+            {
+                // Verificar e normalizar a data se necessário
+                string normalizedDate = patientInsertDTO.BirthDate;
+                if (DateTime.TryParse(patientInsertDTO.BirthDate, out DateTime birthDate))
+                {
+                    normalizedDate = birthDate.ToString("yyyy-MM-dd");
+                }
+                
+                // Preparar os parâmetros para garantir o formato correto
+                var parameters = new
+                {
+                    patientInsertDTO.Name,
+                    patientInsertDTO.PhoneNumber,
+                    patientInsertDTO.DocumentNumber,
+                    BirthDate = normalizedDate,
+                    patientInsertDTO.StatusId
+                };
+                
+                string query = @"
+                    INSERT INTO patient (name, phonenumber, documentnumber, birthdate, statusid) 
+                    VALUES (@Name, @PhoneNumber, @DocumentNumber, @BirthDate, @StatusId);
+                    SELECT LAST_INSERT_ID();";
+                    
+                return await _connection.ExecuteScalarAsync<int>(query, parameters);
+            }
+            catch (Exception ex)
+            {
+                // Melhorar a mensagem de erro para capturar problemas relacionados à data
+                if (ex.Message.Contains("Incorrect date value") || ex.Message.Contains("birthdate"))
+                {
+                    throw new Exception($"Formato de data inválido para o campo birthDate. Use o formato YYYY-MM-DD. Erro original: {ex.Message}");
+                }
+                throw;
+            }
         }
 
-        // Método assíncrono para obter todos os Patient com paginação.
+        public async Task<int> UpdatePatientAsync(int id, PatientInsertDTO patientInsertDTO)
+        {
+            string query = @"
+                UPDATE patient 
+                SET name = @Name, 
+                    phonenumber = @PhoneNumber, 
+                    documentnumber = @DocumentNumber, 
+                    birthdate = @BirthDate, 
+                    statusid = @StatusId
+                WHERE id = @Id";
+
+            var parameters = new
+            {
+                Id = id,
+                patientInsertDTO.Name,
+                patientInsertDTO.PhoneNumber,
+                patientInsertDTO.DocumentNumber,
+                patientInsertDTO.BirthDate,
+                patientInsertDTO.StatusId
+            };
+            
+            return await _connection.ExecuteAsync(query, parameters);
+        }
+
         public async Task<(int total, IEnumerable<PatientDTO> patients)> GetAllAsync(int? itemsPerPage, int? page)
         {
-            // Construção dinâmica da query base.
             var queryBase = new StringBuilder(@"
-                FROM patient S WHERE 1 = 1"); // "1 = 1" é usado para facilitar adição de filtros dinâmicos.
+                FROM patient p WHERE 1 = 1");
 
-            var parameters = new DynamicParameters(); // Objeto para armazenar os parâmetros da query.
+            var parameters = new DynamicParameters();
 
-            // Query para contar o número total de registros sem a paginação.
-            var countQuery = $"SELECT COUNT(DISTINCT S.ID) {queryBase}";
+            // Count total records
+            var countQuery = $"SELECT COUNT(DISTINCT p.id) {queryBase}";
             int total = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
 
-            // Query para buscar os dados paginados.
+            // Get paginated data
             var dataQuery = $@"
-            SELECT ID, 
-            NAME
-            {queryBase}
-            LIMIT @Limit OFFSET @Offset";
+                SELECT 
+                    p.id,
+                    p.name,
+                    p.phonenumber,
+                    p.documentnumber,
+                    p.birthdate,
+                    p.statusid
+                {queryBase}
+                ORDER BY p.id
+                LIMIT @Limit OFFSET @Offset";
 
-            // Adiciona os parâmetros de paginação.
             parameters.Add("Limit", itemsPerPage);
             parameters.Add("Offset", (page - 1) * itemsPerPage);
 
-            // Executa a consulta e retorna os resultados.
-            var patient = await _connection.QueryAsync<PatientDTO>(dataQuery, parameters);
+            var patients = await _connection.QueryAsync<PatientDTO>(dataQuery, parameters);
 
-            return (total, patient); // Retorna o total de registros e a lista de Patient paginada.
+            return (total, patients);
+        }
+        
+        public async Task<PatientListDTO> GetPatientDetailsAsync(int id)
+        {
+            string query = @"
+                SELECT 
+                    p.id,
+                    p.name,
+                    p.phonenumber,
+                    p.documentnumber,
+                    p.birthdate,
+                    s.id as 'Status.Id',
+                    s.name as 'Status.Name'
+                FROM patient p
+                LEFT JOIN status s ON s.id = p.statusid
+                WHERE p.id = @Id";
+
+            var parameters = new { Id = id };
+            
+            PatientListDTO result = null;
+            
+            // Usando um método diferente de mapeamento que lida melhor com a relação
+            var patientDictionary = new Dictionary<int, PatientListDTO>();
+            
+            await _connection.QueryAsync<PatientListDTO, StatusDTO, PatientListDTO>(
+                query,
+                (patient, status) => {
+                    if (!patientDictionary.TryGetValue(patient.Id, out PatientListDTO patientEntry))
+                    {
+                        patientEntry = patient;
+                        patientDictionary.Add(patient.Id, patientEntry);
+                    }
+                    
+                    patientEntry.Status = status;
+                    return patientEntry;
+                },
+                parameters,
+                splitOn: "Status.Id"
+            );
+            
+            result = patientDictionary.Values.FirstOrDefault();
+            return result;
         }
 
-        // public Task<int> DeletePatientAsync(int id)
-        // {
-        //     throw new NotImplementedException();
-        // }
-
-        // public Task<int> InsertPatientAsync(PatientInsertDTO patientInsertDTO)
-        // {
-        //     throw new NotImplementedException();
-        // }
+        public Task<(int total, IEnumerable<PatientListDTO> patients)> GetAllWithDetailsAsync(int? itemsPerPage, int? page)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

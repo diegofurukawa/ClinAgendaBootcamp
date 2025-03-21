@@ -10,6 +10,10 @@
 ├── src
 │   ├── Application
 │   │   ├── DTOs
+│   │   │   ├── Patient
+│   │   │   │   ├── PatientDTO.cs
+│   │   │   │   ├── PatientInsertDTO.cs
+│   │   │   │   └── PatientListDTO.cs
 │   │   │   ├── Specialty
 │   │   │   │   ├── SpecialtyDTO.cs
 │   │   │   │   └── SpecialtyInsertDTO.cs
@@ -17,6 +21,7 @@
 │   │   │       ├── StatusDTO.cs
 │   │   │       └── StatusInsertDTO.cs
 │   │   └── UseCases
+│   │       ├── PatientUseCase.cs
 │   │       ├── SpecialtyUseCase.cs
 │   │       └── StatusUseCase.cs
 │   ├── Core
@@ -31,17 +36,20 @@
 │   │   │   ├── Status.cs
 │   │   │   └── Test.cs
 │   │   └── Interfaces
+│   │       ├── IPatientRepository.cs
 │   │       ├── ISpecialtyRepository.cs
 │   │       └── IStatusRepository.cs
 │   ├── Infrastructure
 │   │   └── Repositories
+│   │       ├── PatientRepository.cs
 │   │       ├── SpecialtyRepository.cs
 │   │       └── StatusRepository.cs
 │   └── WebAPI
 │       └── Controllers
+│           ├── PatientController.cs
 │           ├── SpecialtyController.cs
 │           └── StatusController.cs
 └── structure
     └── ClinAgendaStructure.md
 
-15 directories, 29 files
+16 directories, 36 files
