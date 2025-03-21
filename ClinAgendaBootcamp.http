@@ -1,0 +1,6 @@
+@ClinAgendaBootcamp_HostAddress = http://localhost:5032
+
+GET {{ClinAgendaBootcamp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
