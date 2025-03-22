@@ -30,8 +30,10 @@ public readonly MySqlConnection _connection;
                     p.phonenumber,
                     p.documentnumber,
                     p.birthdate,
-                    p.statusid
+                    p.statusid,
+                    s.name as statusname
                 FROM patient p
+                LEFT JOIN status s ON s.id = p.statusid
                 WHERE p.id = @Id";
 
             var parameters = new { Id = id };
@@ -152,12 +154,12 @@ public readonly MySqlConnection _connection;
             string query = @"
                 SELECT 
                     p.id,
-                    p.name,
-                    p.phonenumber,
-                    p.documentnumber,
-                    p.birthdate,
-                    s.id as 'Status.Id',
-                    s.name as 'Status.Name'
+                    ,p.name
+                    ,p.phonenumber
+                    ,p.documentnumber
+                    ,p.birthdate
+                    ,s.id as statusid
+                    ,s.name as statusname
                 FROM patient p
                 LEFT JOIN status s ON s.id = p.statusid
                 WHERE p.id = @Id";
@@ -171,18 +173,18 @@ public readonly MySqlConnection _connection;
             
             await _connection.QueryAsync<PatientListDTO, StatusDTO, PatientListDTO>(
                 query,
-                (patient, status) => {
+                (patient, statusid) => {
                     if (!patientDictionary.TryGetValue(patient.Id, out PatientListDTO patientEntry))
                     {
                         patientEntry = patient;
                         patientDictionary.Add(patient.Id, patientEntry);
                     }
                     
-                    patientEntry.Status = status;
+                    patientEntry.StatusId = statusid;
                     return patientEntry;
                 },
                 parameters,
-                splitOn: "Status.Id"
+                splitOn: "statusid"
             );
             
             result = patientDictionary.Values.FirstOrDefault();

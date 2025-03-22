@@ -6,6 +6,7 @@ namespace ClinAgendaBootcamp.src.Core.Interfaces
 {
     public interface IPatientRepository
     {
+        // Task<PatientDTO> GetPatientByIdAsync(int id);
         Task<PatientDTO> GetPatientByIdAsync(int id);
         Task<PatientListDTO> GetPatientDetailsAsync(int id);
         Task<int> DeletePatientAsync(int id);
