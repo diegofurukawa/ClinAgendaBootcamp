@@ -14,7 +14,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
     public class PatientRepository : IPatientRepository
     {
         // Conexão com o banco pode ser acessada pelo UseCase para validações
-public readonly MySqlConnection _connection;
+        public readonly MySqlConnection _connection;
 
         public PatientRepository(MySqlConnection connection)
         {
@@ -150,46 +150,46 @@ public readonly MySqlConnection _connection;
         }
         
         public async Task<PatientListDTO> GetPatientDetailsAsync(int id)
-        {
-            string query = @"
-                SELECT 
-                    p.id,
-                    ,p.name
-                    ,p.phonenumber
-                    ,p.documentnumber
-                    ,p.birthdate
-                    ,s.id as statusid
-                    ,s.name as statusname
-                FROM patient p
-                LEFT JOIN status s ON s.id = p.statusid
-                WHERE p.id = @Id";
+            {
+                string query = @"
+                    SELECT 
+                        p.id,
+                        p.name,
+                        p.phonenumber,
+                        p.documentnumber,
+                        p.birthdate,
+                        p.statusid as statusid,                        
+                        s.name as statusname
+                    FROM patient p
+                    LEFT JOIN status s ON s.id = p.statusid
+                    WHERE p.id = @Id";
 
-            var parameters = new { Id = id };
-            
-            PatientListDTO result = null;
-            
-            // Usando um método diferente de mapeamento que lida melhor com a relação
-            var patientDictionary = new Dictionary<int, PatientListDTO>();
-            
-            await _connection.QueryAsync<PatientListDTO, StatusDTO, PatientListDTO>(
-                query,
-                (patient, statusid) => {
-                    if (!patientDictionary.TryGetValue(patient.Id, out PatientListDTO patientEntry))
-                    {
-                        patientEntry = patient;
-                        patientDictionary.Add(patient.Id, patientEntry);
-                    }
-                    
-                    patientEntry.StatusId = statusid;
-                    return patientEntry;
-                },
-                parameters,
-                splitOn: "statusid"
-            );
-            
-            result = patientDictionary.Values.FirstOrDefault();
-            return result;
-        }
+                var parameters = new { Id = id };
+                
+                PatientListDTO result = null;
+                
+                var patientDict = new Dictionary<int, PatientListDTO>();
+                
+                await _connection.QueryAsync<PatientListDTO, StatusDTO, PatientListDTO>(
+                    query,
+                    (patient, status) => {
+                        if (!patientDict.TryGetValue(patient.Id, out PatientListDTO patientEntry))
+                        {
+                            patientEntry = patient;
+                            patientDict.Add(patient.Id, patientEntry);
+                        }
+                        
+                        patientEntry.Status = status;
+                        
+                        return patientEntry;
+                    },
+                    parameters,
+                    splitOn: "statusid"
+                );
+                
+                result = patientDict.Values.FirstOrDefault();
+                return result;
+            }
 
         public Task<(int total, IEnumerable<PatientListDTO> patients)> GetAllWithDetailsAsync(int? itemsPerPage, int? page)
         {
