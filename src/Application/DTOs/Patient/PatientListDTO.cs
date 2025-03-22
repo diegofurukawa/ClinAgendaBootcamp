@@ -8,11 +8,11 @@ namespace ClinAgendaBootcamp.src.Application.DTOs.Patient
 {
     public class PatientListDTO
     {
-        public int Id { get; set; }
-         public required string Name { get; set; }
+        public required int Id { get; set; }
+        public required string Name { get; set; }
         public required string PhoneNumber { get; set; }
         public required string DocumentNumber { get; set; }
-        public required StatusDTO Status { get; set; }
         public required string BirthDate { get; set; }
+        public required StatusDTO Status { get; set; }
     }
 }

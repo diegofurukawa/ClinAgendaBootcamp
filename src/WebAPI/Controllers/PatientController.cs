@@ -18,7 +18,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetPatientAsync([FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetPatientsAsync([FromQuery] string? name, [FromQuery] string? documentNumber, [FromQuery] int? statusId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
         {
             try
             {
@@ -33,7 +33,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                     page = 1;
                 }
                 
-                var patients = await _patientUseCase.GetPatientAsync(itemsPerPage, page);
+                var patients = await _patientUseCase.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
                 return Ok(patients);
             }
             catch (Exception ex)
@@ -66,6 +66,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             }
         }
 
+        // Revised code for the CreatePatientAsync method in PatientController.cs
         [HttpPost("insert")]
         public async Task<IActionResult> CreatePatientAsync([FromBody] PatientInsertDTO patient)
         {
@@ -77,21 +78,20 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                     return BadRequest("Os dados do paciente são inválidos.");
                 }
                 
-                // Validar formato da data
+                // Improved date validation and formatting
                 if (!DateTime.TryParse(patient.BirthDate, out DateTime birthDate))
                 {
-                    return BadRequest("A data de nascimento deve estar no formato YYYY-MM-DD.");
+                    return BadRequest("A data de nascimento deve estar em um formato válido (ex: YYYY-MM-DD).");
                 }
                 
-                // Formatar a data no formato aceito pelo MySQL
+                // Format the date in MySQL accepted format
                 patient.BirthDate = birthDate.ToString("yyyy-MM-dd");
                 
                 var createdPatientId = await _patientUseCase.CreatePatientAsync(patient);
                 
-                // Buscar os detalhes completos do paciente, incluindo o status
+                // Retrieve complete patient details
                 var createdPatient = await _patientUseCase.GetPatientDetailsAsync(createdPatientId);
                 
-                // Se os detalhes não foram encontrados (improvável), tente uma abordagem alternativa
                 if (createdPatient == null)
                 {
                     var basicPatient = await _patientUseCase.GetPatientByIdAsync(createdPatientId);

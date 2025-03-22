@@ -21,28 +21,70 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
             _connection = connection;
         }
 
-        public async Task<PatientDTO> GetPatientByIdAsync(int id)
+        public async Task<(int total, IEnumerable<PatientListDTO> patient)> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
         {
-            string query = @"
-                SELECT 
-                    p.id,
-                    p.name,
-                    p.phonenumber,
-                    p.documentnumber,
-                    p.birthdate,
-                    p.statusid,
-                    s.name as statusname
-                FROM patient p
-                LEFT JOIN status s ON s.id = p.statusid
-                WHERE p.id = @Id";
+            var queryBase = new StringBuilder(@"     
+                    FROM patient P
+                    INNER JOIN status S ON S.ID = P.STATUSID
+                    WHERE 1 = 1");
 
-            var parameters = new { Id = id };
+            var parameters = new DynamicParameters();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                queryBase.Append(" AND P.NAME LIKE @Name");
+                parameters.Add("Name", $"%{name}%");
+            }
+
+            if (!string.IsNullOrEmpty(documentNumber))
+            {
+                queryBase.Append(" AND P.DOCUMENTNUMBER LIKE @DocumentNumber");
+                parameters.Add("DocumentNumber", $"%{documentNumber}%");
+            }
+
+            if (statusId.HasValue)
+            {
+                queryBase.Append(" AND S.ID = @StatusId");
+                parameters.Add("StatusId", statusId.Value);
+            }
+
+            var countQuery = $"SELECT COUNT(DISTINCT P.ID) {queryBase}";
+            int total = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
+
+            var dataQuery = $@"
+                    SELECT 
+                        P.ID, 
+                        P.NAME,
+                        P.PHONENUMBER,
+                        P.DOCUMENTNUMBER,
+                        DATE_FORMAT(P.BIRTHDATE, '%Y-%m-%d') AS BIRTHDATE,
+                        S.ID AS StatusId, 
+                        S.NAME AS StatusName
+                    {queryBase}
+                    ORDER BY P.ID
+                    LIMIT @Limit OFFSET @Offset";
+
+            parameters.Add("Limit", itemsPerPage);
+            parameters.Add("Offset", (page - 1) * itemsPerPage);
+
+            var patients = await _connection.QueryAsync<dynamic>(dataQuery, parameters);
             
-            var patient = await _connection.QueryFirstOrDefaultAsync<PatientDTO>(query, parameters);
-            
-            return patient;
+            var result = patients.Select(p => new PatientListDTO
+            {
+                Id = p.ID,
+                Name = p.NAME,
+                PhoneNumber = p.PHONENUMBER,
+                DocumentNumber = p.DOCUMENTNUMBER,
+                BirthDate = p.BIRTHDATE,
+                Status = new StatusDTO
+                {
+                    Id = p.StatusId,
+                    Name = p.StatusName
+                }
+            });
+
+            return (total, result);
         }
-
         public async Task<int> DeletePatientAsync(int id)
         {
             string query = @"
@@ -117,83 +159,74 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
             return await _connection.ExecuteAsync(query, parameters);
         }
 
-        public async Task<(int total, IEnumerable<PatientDTO> patients)> GetAllAsync(int? itemsPerPage, int? page)
+        public async Task<(int total, IEnumerable<PatientListDTO> patient)> GetPatientDetailsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
         {
-            var queryBase = new StringBuilder(@"
-                FROM patient p WHERE 1 = 1");
+            var queryBase = new StringBuilder(@"     
+                    FROM patient P
+                    INNER JOIN status S ON S.ID = P.STATUSID
+                    WHERE 1 = 1");
 
             var parameters = new DynamicParameters();
 
-            // Count total records
-            var countQuery = $"SELECT COUNT(DISTINCT p.id) {queryBase}";
+            if (!string.IsNullOrEmpty(name))
+            {
+                queryBase.Append(" AND P.NAME LIKE @Name");
+                parameters.Add("Name", $"%{name}%");
+            }
+
+            if (!string.IsNullOrEmpty(documentNumber))
+            {
+                queryBase.Append(" AND P.DOCUMENTNUMBER LIKE @DocumentNumber");
+                parameters.Add("DocumentNumber", $"%{documentNumber}%");
+            }
+
+            if (statusId.HasValue)
+            {
+                queryBase.Append(" AND S.ID = @StatusId");
+                parameters.Add("StatusId", statusId.Value);
+            }
+
+            var countQuery = $"SELECT COUNT(DISTINCT P.ID) {queryBase}";
             int total = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
 
-            // Get paginated data
             var dataQuery = $@"
-                SELECT 
-                    p.id,
-                    p.name,
-                    p.phonenumber,
-                    p.documentnumber,
-                    p.birthdate,
-                    p.statusid
-                {queryBase}
-                ORDER BY p.id
-                LIMIT @Limit OFFSET @Offset";
+                    SELECT 
+                        P.ID, 
+                        P.NAME,
+                        P.PHONENUMBER,
+                        P.DOCUMENTNUMBER,
+                        P.BIRTHDATE ,
+                        P.STATUSID AS STATUSID, 
+                        S.NAME AS STATUSNAME
+                    {queryBase}
+                    ORDER BY P.ID
+                    LIMIT @Limit OFFSET @Offset";
 
             parameters.Add("Limit", itemsPerPage);
             parameters.Add("Offset", (page - 1) * itemsPerPage);
 
-            var patients = await _connection.QueryAsync<PatientDTO>(dataQuery, parameters);
+            var patients = await _connection.QueryAsync<PatientListDTO>(dataQuery, parameters);
 
             return (total, patients);
-        }
-        
-        public async Task<PatientListDTO> GetPatientDetailsAsync(int id)
-            {
-                string query = @"
-                    SELECT 
-                        p.id,
-                        p.name,
-                        p.phonenumber,
-                        p.documentnumber,
-                        p.birthdate,
-                        p.statusid as statusid,                        
-                        s.name as statusname
-                    FROM patient p
-                    LEFT JOIN status s ON s.id = p.statusid
-                    WHERE p.id = @Id";
-
-                var parameters = new { Id = id };
-                
-                PatientListDTO result = null;
-                
-                var patientDict = new Dictionary<int, PatientListDTO>();
-                
-                await _connection.QueryAsync<PatientListDTO, StatusDTO, PatientListDTO>(
-                    query,
-                    (patient, status) => {
-                        if (!patientDict.TryGetValue(patient.Id, out PatientListDTO patientEntry))
-                        {
-                            patientEntry = patient;
-                            patientDict.Add(patient.Id, patientEntry);
-                        }
-                        
-                        patientEntry.Status = status;
-                        
-                        return patientEntry;
-                    },
-                    parameters,
-                    splitOn: "statusid"
-                );
-                
-                result = patientDict.Values.FirstOrDefault();
-                return result;
-            }
-
-        public Task<(int total, IEnumerable<PatientListDTO> patients)> GetAllWithDetailsAsync(int? itemsPerPage, int? page)
+                }
+        public async Task<PatientDTO> GetPatientByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            const string query = @"
+                SELECT 
+                    ID, 
+                    NAME,
+                    PHONENUMBER,
+                    DOCUMENTNUMBER,
+                    BIRTHDATE,
+                    STATUSID
+                FROM patient
+                WHERE ID = @Id";
+
+            var parameters = new { Id = id };
+            
+            var patient = await _connection.QueryFirstOrDefaultAsync<PatientDTO>(query, parameters);
+            
+            return patient;
         }
     }
 }

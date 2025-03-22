@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ClinAgendaAPI
 {
@@ -12,6 +9,6 @@ namespace ClinAgendaAPI
         public required string PhoneNumber { get; set; }
         public required string DocumentNumber { get; set; }
         public required int StatusId { get; set; }
-        public required string BirthDateday { get; set; }
+        public required string BirthDate { get; set; } // Changed from BirthDateday to BirthDate
     }
 }
