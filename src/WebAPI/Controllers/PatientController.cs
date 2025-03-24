@@ -18,31 +18,17 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetPatientAsync([FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+
+        public async Task<IActionResult> GetPatientsAsync([FromQuery] string? name, [FromQuery] string? documentNumber, [FromQuery] int? patientId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
         {
             try
             {
-                // Validação dos parâmetros de paginação
-                if (itemsPerPage <= 0)
-                {
-                    itemsPerPage = 10;
-                }
-                
-                if (page <= 0)
-                {
-                    page = 1;
-                }
-                
-                var patients = await _patientUseCase.GetPatientAsync(itemsPerPage, page);
-                return Ok(patients);
+                var result = await _patientUseCase.GetPatientsAsync(name, documentNumber, patientId, itemsPerPage, page);
+                return Ok(result);
             }
             catch (Exception ex)
             {
-                // Log detalhado do erro para diagnóstico
-                Console.WriteLine($"Erro ao buscar pacientes: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                
-                return StatusCode(500, $"Erro ao buscar pacientes: {ex.Message}");
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
 
@@ -51,58 +37,39 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         {
             try
             {
-                var patient = await _patientUseCase.GetPatientDetailsAsync(id);
-
-                if (patient == null)
-                {
-                    return NotFound($"Paciente com ID {id} não encontrado.");
-                }
-
-                return Ok(patient);
+                var doctor = await _patientUseCase.GetPatientByIdAsync(id);
+                if (doctor == null) return NotFound();
+                return Ok(doctor);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao buscar paciente por ID: {ex.Message}");
+                return StatusCode(500, $"Erro interno do Servidor: {ex.Message}");
             }
         }
 
         [HttpPost("insert")]
+        // public async Task<IActionResult> CreatePatientAsync([FromBody] PatientInsertDTO patient)
         public async Task<IActionResult> CreatePatientAsync([FromBody] PatientInsertDTO patient)
         {
             try
             {
-                // Validação básica dos dados
-                if (patient == null || string.IsNullOrWhiteSpace(patient.Name))
-                {
-                    return BadRequest("Os dados do paciente são inválidos.");
-                }
-                
-                // Validar formato da data
-                if (!DateTime.TryParse(patient.BirthDate, out DateTime birthDate))
-                {
-                    return BadRequest("A data de nascimento deve estar no formato YYYY-MM-DD.");
-                }
-                
-                // Formatar a data no formato aceito pelo MySQL
-                patient.BirthDate = birthDate.ToString("yyyy-MM-dd");
-                
-                var createdPatientId = await _patientUseCase.CreatePatientAsync(patient);
-                
-                // Buscar os detalhes completos do paciente, incluindo o status
-                var createdPatient = await _patientUseCase.GetPatientDetailsAsync(createdPatientId);
-                
-                // Se os detalhes não foram encontrados (improvável), tente uma abordagem alternativa
-                if (createdPatient == null)
-                {
-                    var basicPatient = await _patientUseCase.GetPatientByIdAsync(createdPatientId);
-                    return Created($"/api/Patient/listById/{createdPatientId}", basicPatient);
-                }
+                var hasStatus = await _statusUseCase.GetStatusByIdAsync(patient.StatusId);
+                if (hasStatus == null)
+                    return BadRequest($"O status ID {patient.StatusId} não existe");
 
-                return Created($"/api/Patient/listById/{createdPatientId}", createdPatient);
+                var createdPatientId = await _patientUseCase.CreatePatientAsync(patient);
+
+                if (!(createdPatientId > 0))
+                {
+                    return StatusCode(500, "Erro ao criar a Paciente.");
+                }
+                var infosPatientCreated = await _patientUseCase.GetPatientByIdAsync(createdPatientId);
+
+                return Ok(infosPatientCreated);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao criar paciente: {ex.Message}");
+                return StatusCode(500, $"Erro interno do Servidor: {ex.Message}");
             }
         }
         
@@ -132,7 +99,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                     return NotFound($"Paciente com ID {id} não encontrado ou não foi possível atualizar.");
                 }
                 
-                var updatedPatient = await _patientUseCase.GetPatientDetailsAsync(id);
+                var updatedPatient = await _patientUseCase.GetPatientByIdAsync(id);
                 return Ok(updatedPatient);
             }
             catch (Exception ex)

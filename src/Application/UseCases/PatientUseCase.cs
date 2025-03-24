@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ClinAgendaBootcamp.src.Application.DTOs.Patient;
+using ClinAgendaBootcamp.src.Application.DTOs.Status;
 using ClinAgendaBootcamp.src.Core.Interfaces;
 using ClinAgendaBootcamp.src.Infrastructure.Repositories;
 using Dapper;
@@ -17,38 +18,27 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
             _patientRepository = patientRepository;
         }
 
-        public async Task<object> GetPatientAsync(int itemsPerPage, int page)
+        public async Task<object> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
         {
-            try
-            {
-                // Tentativa com detalhes
-                var (total, rawData) = await _patientRepository.GetAllWithDetailsAsync(itemsPerPage, page);
-                
-                return new
+            var (total, rawData) = await _patientRepository.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
+
+            var patients = rawData
+                .Select(p => new PatientListReturnDTO
                 {
-                    total,
-                    items = rawData.ToList()
-                };
-            }
-            catch (Exception ex)
-            {
-                // Se falhar, tentar abordagem alternativa
-                try
-                {
-                    var (total, basicData) = await _patientRepository.GetAllAsync(itemsPerPage, page);
-                    
-                    return new
+                    Id = p.Id,
+                    Name = p.Name,
+                    PhoneNumber = p.PhoneNumber,
+                    DocumentNumber = p.DocumentNumber,
+                    BirthDate = p.BirthDate,
+                    Status = new StatusDTO
                     {
-                        total,
-                        items = basicData.ToList()
-                    };
-                }
-                catch (Exception fallbackEx)
-                {
-                    // Propagar o erro original se o fallback também falhar
-                    throw new Exception($"Erro ao buscar pacientes: {ex.Message}", ex);
-                }
-            }
+                        Id = p.StatusId,
+                        Name = p.StatusName
+                    }
+                })
+                .ToList();
+
+            return new { total, items = patients };
         }
 
         public async Task<int> CreatePatientAsync(PatientInsertDTO patientDTO)
@@ -95,11 +85,7 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
         {
             return await _patientRepository.GetPatientByIdAsync(id);
         }
-        
-        public async Task<PatientListDTO> GetPatientDetailsAsync(int id)
-        {
-            return await _patientRepository.GetPatientDetailsAsync(id);
-        }
+
         
         public async Task<bool> UpdatePatientAsync(int id, PatientInsertDTO patientDTO)
         {
