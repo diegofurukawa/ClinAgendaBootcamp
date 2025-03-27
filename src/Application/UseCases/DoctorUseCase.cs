@@ -73,11 +73,13 @@ namespace ClinAgendaBootcamp.src.Application.DoctorUseCase
 
             return newDoctorId;
         }
+
+
         public async Task<object> GetDoctorByIdAsync(int id)
         {
             var rawData = await _doctorRepository.GetDoctorByIdAsync(id);
 
-            var result = new
+            var inforDoctor = new
             {
                 item = rawData
                     .GroupBy(item => item.Id)
@@ -97,14 +99,11 @@ namespace ClinAgendaBootcamp.src.Application.DoctorUseCase
                             id = group.First().StatusId,
                             name = group.First().StatusName
                         }
-                    })
-                .ToList()
+                    }).First()
+                
             };
 
-            return new
-            {
-                item = result.item
-            };
+            return inforDoctor;
 
         }
         public async Task<bool> UpdateDoctorAsync(int doctorId, DoctorInsertDTO doctorDto)
