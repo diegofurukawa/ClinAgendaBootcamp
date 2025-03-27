@@ -16,7 +16,10 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetSpecialtyAsync([FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetSpecialtyAsync(
+                [FromQuery] int itemsPerPage = 10, 
+                [FromQuery] int page = 1
+            )
         {
             try
             {

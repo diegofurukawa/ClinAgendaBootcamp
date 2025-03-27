@@ -18,9 +18,22 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
             _patientRepository = patientRepository;
         }
 
-        public async Task<object> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
+        public async Task<object> GetPatientsAsync
+            (
+                string? name, 
+                string? documentNumber, 
+                int? statusId, 
+                int itemsPerPage, 
+                int page
+            )
         {
-            var (total, rawData) = await _patientRepository.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
+            var (total, rawData) = await _patientRepository.GetAllPatientAsync(
+                    name, 
+                    documentNumber, 
+                    statusId, 
+                    itemsPerPage, 
+                    page
+                );
 
             var patients = rawData
                 .Select(p => new PatientListReturnDTO

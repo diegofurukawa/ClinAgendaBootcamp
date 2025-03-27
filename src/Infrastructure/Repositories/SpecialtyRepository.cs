@@ -21,7 +21,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         {
             _connection = connection;
         }
-        public async Task<SpecialtyDTO> GetByIdAsync(int id)
+        public async Task<SpecialtyDTO> GetSpecialtyByIdAsync(int id)
         {
             const string query = @"
                 SELECT 
@@ -35,7 +35,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 
             return specialty;
         }
-        public async Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllAsync(int? itemsPerPage, int? page)
+        public async Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllSpecialtyAsync(int? itemsPerPage, int? page)
         {
             var queryBase = new StringBuilder(@"
                 FROM specialty S WHERE 1 = 1");

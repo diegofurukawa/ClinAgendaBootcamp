@@ -8,9 +8,9 @@ namespace ClinAgendaBootcamp.src.Core.Interfaces
 {
     public interface IStatusRepository
     {
-        Task<StatusDTO> GetByIdAsync(int id);
+        Task<StatusDTO> GetStatusByIdAsync(int id);
         Task<int> DeleteStatusAsync(int id);
         Task<int> InsertStatusAsync(StatusInsertDTO statusInsertDTO);
-        Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllAsync(int? itemsPerPage, int? page);
+        Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllStatusAsync(int? itemsPerPage, int? page);
     }
 }

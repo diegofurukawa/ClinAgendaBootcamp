@@ -1,7 +1,7 @@
 using ClinAgendaBootcamp.src.Application.DTOs.Status;
 using ClinAgendaBootcamp.src.Core.Interfaces;
 
-namespace ClinAgendaBootcamp.src.Application.UseCases
+namespace ClinAgendaBootcamp.src.Application.StatusUseCase
 {
     public class StatusUseCase
     {
@@ -18,7 +18,7 @@ namespace ClinAgendaBootcamp.src.Application.UseCases
         public async Task<object> GetStatusAsync(int itemsPerPage, int page)
         {
             // Chama o repositório para obter os dados paginados e o total de registros.
-            var (total, rawData) = await _statusRepository.GetAllAsync(itemsPerPage, page);
+            var (total, rawData) = await _statusRepository.GetAllStatusAsync(itemsPerPage, page);
 
             // Retorna um objeto anônimo contendo o total de itens e a lista de status formatada.
             return new
@@ -32,7 +32,7 @@ namespace ClinAgendaBootcamp.src.Application.UseCases
         public async Task<StatusDTO?> GetStatusByIdAsync(int id)
         {
             // Chama o repositório para buscar um status específico pelo ID.
-            return await _statusRepository.GetByIdAsync(id);
+            return await _statusRepository.GetStatusByIdAsync(id);
         }
 
         // Método assíncrono que cria um novo status e retorna o ID gerado.

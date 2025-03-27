@@ -1,10 +1,18 @@
-using ClinAgendaBootcamp.src.Core.Interfaces;
-using ClinAgendaBootcamp.src.Infrastructure.Repositories;
-using ClinAgendaBootcamp.src.Application.UseCases;
-using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
-using MySql.Data.MySqlClient;
-using ClinAgendaBootcamp.src.Application.PatientUseCase;
 
+// Importacao dos UseCases
+using ClinAgendaBootcamp.src.Application.PatientUseCase;
+using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
+using ClinAgendaBootcamp.src.Application.DoctorUseCase;
+using ClinAgendaBootcamp.src.Application.StatusUseCase;
+
+// Importacao das Interfaces
+using ClinAgendaBootcamp.src.Core.Interfaces;
+
+// Importacao dos Repositorios
+using ClinAgendaBootcamp.src.Infrastructure.Repositories;
+
+// Importacao do MYSQL
+using MySql.Data.MySqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +38,11 @@ builder.Services.AddScoped<SpecialtyUseCase>();
 // Patient
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<PatientUseCase>();
+
+// Doctor
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IDoctorSpecialtyRepository, DoctorSpecialtyRepository>(); // Add this line
+builder.Services.AddScoped<DoctorUseCase>();
 
 var app = builder.Build();
 

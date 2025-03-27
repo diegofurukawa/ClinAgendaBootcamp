@@ -8,7 +8,7 @@ namespace ClinAgendaBootcamp.src.Core.Interfaces
     {
         Task<PatientDTO> GetPatientByIdAsync(int id);
         // Task<PatientListDTO> GetPatientDetailsAsync(int id);
-        Task<(int total, IEnumerable<PatientListDTO> patient)> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page);
+        Task<(int total, IEnumerable<PatientListDTO> patient)> GetAllPatientAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page);
         Task<int> DeletePatientAsync(int id);
         Task<int> InsertPatientAsync(PatientInsertDTO patientInsertDTO);
         Task<int> UpdatePatientAsync(int id, PatientInsertDTO patientInsertDTO);

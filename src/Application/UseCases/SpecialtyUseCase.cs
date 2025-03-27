@@ -18,7 +18,7 @@ namespace ClinAgendaBootcamp.src.Application.SpecialtyUseCase
 
         public async Task<object> GetSpecialtyAsync(int itemsPerPage, int page)
         {
-            var (total, rawData) = await _specialtyRepository.GetAllAsync(itemsPerPage, page);
+            var (total, rawData) = await _specialtyRepository.GetAllSpecialtyAsync(itemsPerPage, page);
 
             return new
             {
@@ -37,7 +37,7 @@ namespace ClinAgendaBootcamp.src.Application.SpecialtyUseCase
         }
         public async Task<SpecialtyDTO?> GetSpecialtyByIdAsync(int id)
         {
-            return await _specialtyRepository.GetByIdAsync(id);
+            return await _specialtyRepository.GetSpecialtyByIdAsync(id);
         }
 
     }

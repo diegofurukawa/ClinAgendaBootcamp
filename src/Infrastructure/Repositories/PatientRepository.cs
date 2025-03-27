@@ -42,7 +42,7 @@ public readonly MySqlConnection _connection;
         }
 
 
-        public async Task<(int total, IEnumerable<PatientListDTO> patient)> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
+        public async Task<(int total, IEnumerable<PatientListDTO> patient)> GetAllPatientAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
         {
             var queryBase = new StringBuilder(@"     
                     FROM patient P

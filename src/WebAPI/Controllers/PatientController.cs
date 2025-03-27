@@ -1,5 +1,6 @@
 using ClinAgendaBootcamp.src.Application.DTOs.Patient;
 using ClinAgendaBootcamp.src.Application.PatientUseCase;
+using ClinAgendaBootcamp.src.Application.StatusUseCase;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -11,15 +12,23 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
     public class PatientController : ControllerBase
     {
         private readonly PatientUseCase _patientUseCase;
+        private readonly StatusUseCase _statusUseCase;
 
-        public PatientController(PatientUseCase patientUseCase)
+        public PatientController(PatientUseCase patientService, StatusUseCase statusUseCase)
         {
-            _patientUseCase = patientUseCase;
+            _patientUseCase = patientService;
+            _statusUseCase = statusUseCase;
         }
 
         [HttpGet("list")]
 
-        public async Task<IActionResult> GetPatientsAsync([FromQuery] string? name, [FromQuery] string? documentNumber, [FromQuery] int? patientId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetPatientsAsync(
+            [FromQuery] string? name, 
+            [FromQuery] string? documentNumber, 
+            [FromQuery] int? patientId,
+            [FromQuery] int itemsPerPage = 10, 
+            [FromQuery] int page = 1
+            )
         {
             try
             {

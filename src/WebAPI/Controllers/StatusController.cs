@@ -1,5 +1,5 @@
 using ClinAgendaBootcamp.src.Application.DTOs.Status;
-using ClinAgendaBootcamp.src.Application.UseCases;
+using ClinAgendaBootcamp.src.Application.StatusUseCase;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinAgendaBootcamp.src.WebAPI.Controllers
@@ -16,7 +16,10 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetStatusAsync([FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetStatusAsync(
+                [FromQuery] int itemsPerPage = 10, 
+                [FromQuery] int page = 1
+            )
         {
             try
             {
