@@ -28,7 +28,13 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             _specialtyUseCase = specialtyUseCase;
         }
         [HttpGet("list")]
-        public async Task<IActionResult> GetDoctors([FromQuery] string? name, [FromQuery] int? specialtyId, [FromQuery] int? statusId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetDoctors(
+            [FromQuery] string? name, 
+            [FromQuery] int? specialtyId, 
+            [FromQuery] int? statusId, 
+            [FromQuery] int itemsPerPage = 10, 
+            [FromQuery] int page = 1
+            )
         {
             try
             {
@@ -40,6 +46,16 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
+        
+        [HttpGet("listById/{id}")]
+        public async Task<IActionResult> GetDoctorByIdAsync(int id)
+        {
+            var doctor = await _doctorUseCase.GetDoctorByIdAsync(id);
+            if (doctor == null) return NotFound();
+            return Ok(doctor);
+        }
+
+
         [HttpPost("insert")]
         public async Task<IActionResult> CreateDoctorAsync([FromBody] DoctorInsertDTO doctor)
         {
@@ -49,7 +65,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 if (hasStatus == null)
                     return BadRequest($"O status com ID {doctor.StatusId} não existe.");
 
-                var specialties = await _specialtyUseCase.GetSpecialtyByIdAsync(doctor.Specialty);
+                var specialties = await _specialtyUseCase.GetSpecialtiesByIdsAsync(doctor.Specialty);
 
                 var notFoundSpecialties = doctor.Specialty.Except(specialties.Select(s => s.Id)).ToList();
 
@@ -69,6 +85,8 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
+
+
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateDoctorAsync(int id, [FromBody] DoctorInsertDTO doctor)
         {
@@ -78,7 +96,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             if (hasStatus == null)
                 return BadRequest($"O status com ID {doctor.StatusId} não existe.");
 
-            var specialties = await _specialtyUseCase.GetSpecialtyByIdAsync(doctor.Specialty);
+            var specialties = await _specialtyUseCase.GetSpecialtiesByIdsAsync(doctor.Specialty);
 
             var notFoundSpecialties = doctor.Specialty.Except(specialties.Select(s => s.Id)).ToList();
 
@@ -94,13 +112,6 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             var infosDoctorUpdate = await _doctorUseCase.GetDoctorByIdAsync(id);
             return Ok(infosDoctorUpdate);
 
-        }
-        [HttpGet("listById/{id}")]
-        public async Task<IActionResult> GetDoctorByIdAsync(int id)
-        {
-            var doctor = await _doctorUseCase.GetDoctorByIdAsync(id);
-            if (doctor == null) return NotFound();
-            return Ok(doctor);
         }
 
     }
