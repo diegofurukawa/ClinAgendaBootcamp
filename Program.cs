@@ -13,6 +13,7 @@ using ClinAgendaBootcamp.src.Infrastructure.Repositories;
 
 // Importacao do MYSQL
 using MySql.Data.MySqlClient;
+using ClinAgendaBootcamp.src.Application.AppointmentUseCase;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +44,10 @@ builder.Services.AddScoped<PatientUseCase>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IDoctorSpecialtyRepository, DoctorSpecialtyRepository>(); // Add this line
 builder.Services.AddScoped<DoctorUseCase>();
+
+// Appointment
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<AppointmentUseCase>();
 
 var app = builder.Build();
 
