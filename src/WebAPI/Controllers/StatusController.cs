@@ -1,5 +1,5 @@
 using ClinAgendaBootcamp.src.Application.DTOs.Status;
-using ClinAgendaBootcamp.src.Application.UseCases;
+using ClinAgendaBootcamp.src.Application.StatusUseCase;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinAgendaBootcamp.src.WebAPI.Controllers
@@ -16,7 +16,10 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetStatusAsync([FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
+        public async Task<IActionResult> GetStatusAsync(
+                [FromQuery] int itemsPerPage = 10, 
+                [FromQuery] int page = 1
+            )
         {
             try
             {
@@ -62,8 +65,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 var createdStatus = await _statusUseCase.CreateStatusAsync(status);
                 var infosStatusCreated = await _statusUseCase.GetStatusByIdAsync(createdStatus);
 
-                // return CreatedAtAction(nameof(GetStatusByIdAsync), new { id = createdStatus }, infosStatusCreated);
-                return Created($"/api/status/listById/{createdStatus}", infosStatusCreated);
+                return CreatedAtAction(nameof(GetStatusByIdAsync), new { id = createdStatus }, infosStatusCreated);
             }
             catch (Exception ex)
             {

@@ -18,12 +18,25 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
             _patientRepository = patientRepository;
         }
 
-        public async Task<object> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
+        public async Task<object> GetPatientsAsync
+            (
+                string? name, 
+                string? documentNumber, 
+                int? statusId, 
+                int itemsPerPage, 
+                int page
+            )
         {
-            var (total, rawData) = await _patientRepository.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
+            var (total, rawData) = await _patientRepository.GetAllPatientAsync(
+                    name, 
+                    documentNumber, 
+                    statusId, 
+                    itemsPerPage, 
+                    page
+                );
 
             var patients = rawData
-                .Select(p => new PatientListDTO
+                .Select(p => new PatientListReturnDTO
                 {
                     Id = p.Id,
                     Name = p.Name,
@@ -32,8 +45,8 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
                     BirthDate = p.BirthDate,
                     Status = new StatusDTO
                     {
-                        Id = p.Status.Id,
-                        Name = p.Status.Name
+                        Id = p.StatusId,
+                        Name = p.StatusName
                     }
                 })
                 .ToList();
@@ -85,44 +98,7 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
         {
             return await _patientRepository.GetPatientByIdAsync(id);
         }
-        
-        // Adicione este método ao PatientUseCase.cs
-        public async Task<PatientListDTO?> GetPatientDetailsAsync(int id)
-        {
-            try
-            {
-                // Buscamos apenas um paciente pelo ID
-                var patient = await _patientRepository.GetPatientByIdAsync(id);
-                
-                if (patient == null)
-                {
-                    return null;
-                }
-                
-                // Buscar o status do paciente
-                string query = "SELECT id, name FROM status WHERE id = @StatusId";
-                var parameters = new { StatusId = patient.StatusId };
-                
-                var connection = (_patientRepository as PatientRepository)?._connection;
-                var status = await connection.QueryFirstOrDefaultAsync<StatusDTO>(query, parameters);
-                
-                // Retornar o DTO completo
-                return new PatientListDTO
-                {
-                    Id = patient.Id,
-                    Name = patient.Name,
-                    PhoneNumber = patient.PhoneNumber,
-                    DocumentNumber = patient.DocumentNumber,
-                    BirthDate = patient.BirthDate,
-                    Status = status ?? new StatusDTO { Id = patient.StatusId, Name = "Desconhecido" }
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Erro ao buscar detalhes do paciente: {ex.Message}", ex);
-            }
-        }
-        
+
         
         public async Task<bool> UpdatePatientAsync(int id, PatientInsertDTO patientDTO)
         {

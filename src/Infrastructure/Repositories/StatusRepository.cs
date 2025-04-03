@@ -18,7 +18,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
 
         // Método assíncrono para buscar um status pelo ID.
-        public async Task<StatusDTO> GetByIdAsync(int id)
+        public async Task<StatusDTO> GetStatusByIdAsync(int id)
         {
             // Query SQL para selecionar o status pelo ID.
             string query = @"
@@ -65,7 +65,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
 
         // Método assíncrono para obter todos os status com paginação.
-        public async Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllAsync(int? itemsPerPage, int? page)
+        public async Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllStatusAsync(int? itemsPerPage, int? page)
         {
             // Construção dinâmica da query base.
             var queryBase = new StringBuilder(@"

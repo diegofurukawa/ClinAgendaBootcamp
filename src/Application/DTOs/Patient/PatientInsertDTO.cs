@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,25 +8,19 @@ namespace ClinAgendaBootcamp.src.Application.DTOs.Patient
 {
     public class PatientInsertDTO
     {
+        [Required(ErrorMessage = "O Nome do Paciente é obrigatório", AllowEmptyStrings = false)]
+        public required string @Name { get; set; }
 
-        [Required(ErrorMessage = "Por favor insira um Nome.")]
-        [StringLength(250)]
-        public required string Name { get; set; }
-
-        [Required(ErrorMessage = "Por favor insira um Telefone.")]
-        [StringLength(20)]
+        [Required(ErrorMessage = "O Telefone do Paciente é obrigatório", AllowEmptyStrings = false)]
         public required string PhoneNumber { get; set; }
 
-        [Required(ErrorMessage = "Por favor insira um Documento.")]
-        [StringLength(50)]
+        [Required(ErrorMessage = "O Documento do Paciente é obrigatório", AllowEmptyStrings = false)]
         public required string DocumentNumber { get; set; }
 
-        [Required(ErrorMessage = "Por favor insira um Status.")]
-        [IntegerValidator]
+        [Required(ErrorMessage = "O Status Paciente é obrigatório", AllowEmptyStrings = false)]
         public required int StatusId { get; set; }
-        
-        [Required(ErrorMessage = "Por favor insira um Data.")]
-        [StringLength(20)]
+
+        [Required(ErrorMessage = "O Dia de nascimento do Paciente é obrigatório", AllowEmptyStrings = false)]
         public required string BirthDate { get; set; }
     }
 }

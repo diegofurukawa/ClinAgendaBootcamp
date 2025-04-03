@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ClinAgendaBootcamp.src.Core.Entities
+namespace ClinAgendaBootcamp.src.Application.DTOs.Appointment
 {
-    public class Status
+    public class AppointmentDoctorReturnDTO
     {
-         public int Id { get; set; }
+        public int Id { get; set; }
         public required string Name { get; set; }
     }
 }

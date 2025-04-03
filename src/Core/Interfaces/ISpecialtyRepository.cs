@@ -9,10 +9,10 @@ namespace ClinAgendaBootcamp.src.Core.Interfaces
 {
     public interface ISpecialtyRepository
     {
-        Task<SpecialtyDTO> GetByIdAsync(int id);
+        Task<SpecialtyDTO> GetSpecialtyByIdAsync(int id);
         Task<int> DeleteSpecialtyAsync(int id);
         Task<int> InsertSpecialtyAsync(SpecialtyInsertDTO SpecialtyInsertDTO);
-        Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllAsync(int? itemsPerPage, int? page);
+        Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllSpecialtyAsync(int? itemsPerPage, int? page);
         Task<int> InsertSpecialtyAsync(Specialty specialty);
     }
 }

@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ClinAgendaBootcamp.src.Core.Entities
+namespace ClinAgendaBootcamp.src.Application.DTOs.Appointment
 {
-    public class Patient
+    public class AppointmentPatientReturnDTO
     {
         public int Id { get; set; }
         public required string Name { get; set; }
-        public required string PhoneNumber { get; set; }
         public required string DocumentNumber { get; set; }
-        public required int StatusId { get; set; }
-        public required string BirthDateday { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 using ClinAgendaBootcamp.src.Core.Interfaces;
 using ClinAgendaBootcamp.src.Infrastructure.Repositories;
-using ClinAgendaBootcamp.src.Application.UseCases;
+using ClinAgendaBootcamp.src.Application.StatusUseCase;
 using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
 using MySql.Data.MySqlClient;
 using ClinAgendaBootcamp.src.Application.PatientUseCase;
