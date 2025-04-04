@@ -18,13 +18,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         {
             _connection = connection;
         }
-        public async Task<IEnumerable<DoctorListDTO>> GetDoctorsAsync(
-            string? name, 
-            int? specialtyId, 
-            int? statusId, 
-            int offset, 
-            int itemsPerPage
-            )
+        public async Task<(int total, IEnumerable<DoctorListDTO> doctors)> GetDoctorsAsync(string? name, int? specialtyId, int? statusId, int offset, int itemsPerPage)
         {
 
             var innerJoins = new StringBuilder(@"
@@ -37,22 +31,25 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 
             if (!string.IsNullOrEmpty(name))
             {
-                innerJoins.Append("AND D.NAME LIKE @Name");
+                innerJoins.Append(" AND D.NAME LIKE @Name");
                 parameters.Add("Name", $"%{name}%");
             }
 
             if (specialtyId.HasValue)
             {
-                innerJoins.Append("AND DSPE.SPECIALTYID = @SpecialtyId");
+                innerJoins.Append(" AND DSPE.SPECIALTYID = @SpecialtyId");
                 parameters.Add("SpecialtyId", specialtyId.Value);
             }
 
             if (statusId.HasValue)
             {
-                innerJoins.Append("AND S.ID = @StatusId");
+                innerJoins.Append(" AND S.ID = @StatusId");
                 parameters.Add("StatusId", statusId.Value);
             }
 
+            var countQuery = $"SELECT COUNT(DISTINCT D.ID) {innerJoins}";
+            int total = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
+            
             parameters.Add("LIMIT", itemsPerPage);
             parameters.Add("OFFSET", offset);
 
@@ -66,10 +63,12 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
                 ORDER BY D.ID
                 LIMIT @Limit OFFSET @Offset";
 
-            return await _connection.QueryAsync<DoctorListDTO>(query.ToString(), parameters);
+                var doctors = await _connection.QueryAsync<DoctorListDTO>(query.ToString(), parameters);
+
+                return (total, doctors);
         }
 
-        public async Task<IEnumerable<SpecialtyDoctorDTO>> GetDoctorSpecialtyAsync(int[] doctorIds)
+        public async Task<IEnumerable<SpecialtyDoctorDTO>> GetDoctorSpecialtiesAsync(int[] doctorIds)
         {
             var query = @"
                 SELECT 
@@ -93,7 +92,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
             SELECT LAST_INSERT_ID();";
             return await _connection.ExecuteScalarAsync<int>(query, doctor);
         }
-        public async Task<IEnumerable<DoctorListDTO>> GetDoctorByIdAsync(int id)
+        public async Task<IEnumerable<DoctorListDTO>> GetByIdAsync(int id)
         {
             var queryBase = new StringBuilder(@"
                     FROM DOCTOR D
@@ -125,7 +124,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 
             return doctors;
         }
-        public async Task<bool> UpdateDoctorAsync(DoctorDTO doctor)
+        public async Task<bool> UpdateAsync(DoctorDTO doctor)
         {
             string query = @"
             UPDATE Doctor SET 
@@ -135,7 +134,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
             int rowsAffected = await _connection.ExecuteAsync(query, doctor);
             return rowsAffected > 0;
         }
-        public async Task<int> DeleteDoctorByIdAsync(int id)
+        public async Task<int> DeleteByDoctorIdAsync(int id)
         {
             string query = "DELETE FROM DOCTOR WHERE ID = @Id";
 
@@ -147,5 +146,4 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
 
     }
-
 }

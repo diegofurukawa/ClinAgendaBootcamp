@@ -18,13 +18,13 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
 
         // Método assíncrono para buscar um status pelo ID.
-        public async Task<StatusDTO> GetStatusByIdAsync(int id)
+        public async Task<StatusDTO?> GetByIdAsync(int id)
         {
             // Query SQL para selecionar o status pelo ID.
             string query = @"
             SELECT ID, 
                    NAME 
-            FROM status
+            FROM STATUS
             WHERE ID = @Id";
 
             var parameters = new { Id = id }; // Parâmetro da query.
@@ -40,7 +40,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         {
             // Query SQL para deletar um status pelo ID.
             string query = @"
-            DELETE FROM status
+            DELETE FROM STATUS
             WHERE ID = @Id";
 
             var parameters = new { Id = id }; // Parâmetro da query.
@@ -56,7 +56,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         {
             // Query SQL para inserir um novo status e obter o ID gerado.
             string query = @"
-            INSERT INTO status (NAME) 
+            INSERT INTO STATUS (NAME) 
             VALUES (@Name);
             SELECT LAST_INSERT_ID();"; // Obtém o ID do último registro inserido.
 
@@ -65,11 +65,11 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
 
         // Método assíncrono para obter todos os status com paginação.
-        public async Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllStatusAsync(int? itemsPerPage, int? page)
+        public async Task<(int total, IEnumerable<StatusDTO> specialtys)> GetAllAsync(int? itemsPerPage, int? page)
         {
             // Construção dinâmica da query base.
             var queryBase = new StringBuilder(@"
-                FROM status S WHERE 1 = 1"); // "1 = 1" é usado para facilitar adição de filtros dinâmicos.
+                FROM STATUS S WHERE 1 = 1"); // "1 = 1" é usado para facilitar adição de filtros dinâmicos.
 
             var parameters = new DynamicParameters(); // Objeto para armazenar os parâmetros da query.
 

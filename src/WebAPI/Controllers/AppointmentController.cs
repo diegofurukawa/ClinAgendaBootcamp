@@ -2,11 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using ClinAgendaBootcamp.src.Application.AppointmentUseCase;
 using ClinAgendaBootcamp.src.Application.DTOs.Appointment;
-using ClinAgendaBootcamp.src.Application.PatientUseCase;
-using ClinAgendaBootcamp.src.Application.DoctorUseCase;
-using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
+using ClinAgendaBootcamp.src.Application.UseCases;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinAgendaBootcamp.src.WebAPI.Controllers
@@ -16,166 +13,128 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
     public class AppointmentController : ControllerBase
     {
         private readonly AppointmentUseCase _appointmentUseCase;
-        private readonly PatientUseCase _patientUseCase;
         private readonly DoctorUseCase _doctorUseCase;
+        private readonly PatientUseCase _patientUseCase;
         private readonly SpecialtyUseCase _specialtyUseCase;
 
-        public AppointmentController(
-            AppointmentUseCase appointmentUseCase, 
-            PatientUseCase patientUseCase, 
-            DoctorUseCase doctorUseCase, 
-            SpecialtyUseCase specialtyUseCase)
+        public AppointmentController(AppointmentUseCase service, DoctorUseCase doctorUseCase, PatientUseCase patientUseCase, SpecialtyUseCase specialtyUseCase)
         {
-            _appointmentUseCase = appointmentUseCase;
-            _patientUseCase = patientUseCase;
+            _appointmentUseCase = service;
             _doctorUseCase = doctorUseCase;
+            _patientUseCase = patientUseCase;
             _specialtyUseCase = specialtyUseCase;
         }
-
         [HttpGet("list")]
-        public async Task<IActionResult> GetAppointmentsAsync(
-            [FromQuery] string? patientName, 
-            [FromQuery] string? doctorName, 
-            [FromQuery] int? specialtyId, 
-            [FromQuery] int itemsPerPage = 10, 
-            [FromQuery] int page = 1)
+        public async Task<IActionResult> GetAppointmentsAsync([FromQuery] string? patientName, [FromQuery] string? doctorName, [FromQuery] int? specialtyId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
         {
             try
             {
-                var result = await _appointmentUseCase.GetAppointmentsAsync(
-                    patientName, 
-                    doctorName, 
-                    specialtyId, 
-                    itemsPerPage, 
-                    page);
-                
+                var result = await _appointmentUseCase.GetAppointmentsAsync(patientName, doctorName, specialtyId, itemsPerPage, page);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
+        [HttpPost("insert")]
+        public async Task<IActionResult> CreateAppointmentAsync([FromBody] AppointmentDTO appointment)
+        {
+            try
+            {
+                var hasDoctor = await _doctorUseCase.GetDoctorByIdAsync(appointment.DoctorId);
+                if (hasDoctor == null)
+                    return BadRequest($"O Doctor com ID {appointment.DoctorId} não existe.");
 
+                var hasPatient = await _patientUseCase.GetPatientByIdAsync(appointment.PatientId);
+                if (hasPatient == null)
+                    return BadRequest($"O Paciente com ID {appointment.PatientId} não existe.");
+
+                var specialties = await _specialtyUseCase.GetSpecialtyByIdAsync(appointment.SpecialtyId);
+
+
+                if (specialties == null)
+                {
+                    return BadRequest($"A especialidade com o ID {appointment.SpecialtyId} não existe.");
+                }
+
+
+                var createdAppointment = await _appointmentUseCase.CreateAppointmentAsync(appointment);
+
+                var infosAppointmentCreated = await _appointmentUseCase.GetAppointmentByIdAsync(createdAppointment);
+                return Ok(infosAppointmentCreated);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+            }
+        }
         [HttpGet("listById/{id}")]
         public async Task<IActionResult> GetAppointmentByIdAsync(int id)
         {
             try
             {
                 var appointment = await _appointmentUseCase.GetAppointmentByIdAsync(id);
-                
-                if (appointment == null)
-                {
-                    return NotFound($"Appointment with ID {id} not found.");
-                }
-                
+                if (appointment == null) return NotFound();
                 return Ok(appointment);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"{ex.Message}");
             }
         }
-
-        [HttpPost("insert")]
-        public async Task<IActionResult> CreateAppointmentAsync([FromBody] AppointmentDTO appointment)
-        {
-            try
-            {
-                if (appointment == null)
-                {
-                    return BadRequest("Appointment data is invalid.");
-                }
-
-                // Validate if Patient exists
-                var patient = await _patientUseCase.GetPatientByIdAsync(appointment.PatientId);
-                if (patient == null)
-                {
-                    return BadRequest($"Patient with ID {appointment.PatientId} does not exist.");
-                }
-
-                // Validate if Doctor exists
-                var doctor = await _doctorUseCase.GetDoctorByIdAsync(appointment.DoctorId);
-                if (doctor == null)
-                {
-                    return BadRequest($"Doctor with ID {appointment.DoctorId} does not exist.");
-                }
-
-                // Validate if Specialty exists
-                var specialty = await _specialtyUseCase.GetSpecialtyByIdAsync(appointment.SpecialtyId);
-                if (specialty == null)
-                {
-                    return BadRequest($"Specialty with ID {appointment.SpecialtyId} does not exist.");
-                }
-
-                // Create appointment
-                var createdAppointmentId = await _appointmentUseCase.CreateAppointmentAsync(appointment);
-                
-                // Retrieve the created appointment
-                var createdAppointment = await _appointmentUseCase.GetAppointmentByIdAsync(createdAppointmentId);
-                
-                return CreatedAtAction(nameof(GetAppointmentByIdAsync), new { id = createdAppointmentId }, createdAppointment);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
         [HttpPut("update/{id}")]
-        public async Task<IActionResult> UpdateAppointmentAsync(int id, [FromBody] AppointmentInsertDTO appointment)
+        public async Task<IActionResult> UpdateAppointmentAsync(int id, [FromBody] AppointmentDTO appointment)
         {
             try
             {
-                if (appointment == null)
+                if (appointment == null) return BadRequest();
+
+                 var hasDoctor = await _doctorUseCase.GetDoctorByIdAsync(appointment.DoctorId);
+                if (hasDoctor == null)
+                    return BadRequest($"O Doctor com ID {appointment.DoctorId} não existe.");
+
+                var hasPatient = await _patientUseCase.GetPatientByIdAsync(appointment.PatientId);
+                if (hasPatient == null)
+                    return BadRequest($"O Paciente com ID {appointment.PatientId} não existe.");
+
+                var specialties = await _specialtyUseCase.GetSpecialtyByIdAsync(appointment.SpecialtyId);
+
+
+                if (specialties == null)
                 {
-                    return BadRequest("Appointment data is invalid.");
+                    return BadRequest($"A especialidade com o ID {appointment.SpecialtyId} não existe.");
                 }
 
-                // Update appointment
                 bool updated = await _appointmentUseCase.UpdateAppointmentAsync(id, appointment);
-                
-                if (!updated)
-                {
-                    return NotFound($"Appointment with ID {id} not found or could not be updated.");
-                }
-                
-                // Retrieve the updated appointment
-                var updatedAppointment = await _appointmentUseCase.GetAppointmentByIdAsync(id);
-                
-                return Ok(updatedAppointment);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
+                if (!updated) return NotFound("Paciente não encontrado.");
+
+                var infosDoctorUpdate = await _appointmentUseCase.GetAppointmentByIdAsync(id);
+                return Ok(infosDoctorUpdate);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"{ex.Message}");
             }
-        }
 
+        }
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteAppointmentAsync(int id)
         {
             try
             {
-                bool deleted = await _appointmentUseCase.DeleteAppointmentAsync(id);
-                
-                if (!deleted)
+                var success = await _appointmentUseCase.DeleteAppointmentByIdAsync(id);
+
+                if (!success)
                 {
-                    return NotFound($"Appointment with ID {id} not found or could not be deleted.");
+                    return NotFound($"Agendamento com ID {id} não encontrado.");
                 }
-                
-                return NoContent();
+
+                return Ok("Agendamento deletado com sucesso");
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"{ex.Message}");
             }
         }
     }

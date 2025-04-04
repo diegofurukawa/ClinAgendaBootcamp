@@ -8,11 +8,10 @@ namespace ClinAgendaBootcamp.src.Core.Interfaces
 {
     public interface IDoctorRepository
     {
-        Task<IEnumerable<DoctorListDTO>> GetDoctorsAsync(string? name, int? specialtyId, int? statusId, int offset, int pageSize);
-        Task<IEnumerable<SpecialtyDoctorDTO>> GetDoctorSpecialtyAsync(int[] doctorIds);
+        Task<(int total, IEnumerable<DoctorListDTO> doctors)> GetDoctorsAsync(string? name, int? specialtyId, int? statusId, int offset, int itemsPerPage); Task<IEnumerable<SpecialtyDoctorDTO>> GetDoctorSpecialtiesAsync(int[] doctorIds);
         Task<int> InsertDoctorAsync(DoctorInsertDTO doctor);
-        Task<IEnumerable<DoctorListDTO>> GetDoctorByIdAsync(int id);
-        Task<bool> UpdateDoctorAsync(DoctorDTO doctor);
-         Task<int> DeleteDoctorByIdAsync(int id);
+        Task<IEnumerable<DoctorListDTO>> GetByIdAsync(int id);
+        Task<bool> UpdateAsync(DoctorDTO doctor);
+        Task<int> DeleteByDoctorIdAsync(int id);
     }
 }

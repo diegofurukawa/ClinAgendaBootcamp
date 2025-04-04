@@ -5,10 +5,8 @@ using System.Threading.Tasks;
 
 namespace ClinAgendaBootcamp.src.Application.DTOs.Doctor
 {
-    public class DoctorDTO
+    public class DoctorReturnAppointmentDTO
     {
-        public int Id { get; set; }
-        public required string Name { get; set; }
-        public int StatusId { get; set; }
+         public required string Name { get; set; }
     }
 }

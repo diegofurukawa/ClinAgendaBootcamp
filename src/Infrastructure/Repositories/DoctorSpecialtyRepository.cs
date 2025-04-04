@@ -37,5 +37,4 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
             await _connection.ExecuteAsync(query, new { DoctorId = doctorId });
         }
     }
-
 }

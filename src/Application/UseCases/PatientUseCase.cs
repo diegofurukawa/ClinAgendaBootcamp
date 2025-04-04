@@ -1,39 +1,23 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ClinAgendaBootcamp.src.Application.DTOs.Patient;
 using ClinAgendaBootcamp.src.Application.DTOs.Status;
 using ClinAgendaBootcamp.src.Core.Interfaces;
-using ClinAgendaBootcamp.src.Infrastructure.Repositories;
-using Dapper;
 
-namespace ClinAgendaBootcamp.src.Application.PatientUseCase
+namespace ClinAgendaBootcamp.src.Application.UseCases
 {
     public class PatientUseCase
     {
         private readonly IPatientRepository _patientRepository;
-
         public PatientUseCase(IPatientRepository patientRepository)
         {
             _patientRepository = patientRepository;
         }
-
-        public async Task<object> GetPatientsAsync
-            (
-                string? name, 
-                string? documentNumber, 
-                int? statusId, 
-                int itemsPerPage, 
-                int page
-            )
+        public async Task<PatientResponseDTO> GetPatientsAsync(string? name, string? documentNumber, int? statusId, int itemsPerPage, int page)
         {
-            var (total, rawData) = await _patientRepository.GetAllPatientAsync(
-                    name, 
-                    documentNumber, 
-                    statusId, 
-                    itemsPerPage, 
-                    page
-                );
+            var (total, rawData) = await _patientRepository.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
 
             var patients = rawData
                 .Select(p => new PatientListReturnDTO
@@ -51,78 +35,60 @@ namespace ClinAgendaBootcamp.src.Application.PatientUseCase
                 })
                 .ToList();
 
-            return new { total, items = patients };
+            return new PatientResponseDTO
+            {
+                Total = total,
+                Items = patients
+            };
         }
-
         public async Task<int> CreatePatientAsync(PatientInsertDTO patientDTO)
         {
-            // Validar se o StatusId existe
-            var statusExists = await ValidateStatusExistsAsync(patientDTO.StatusId);
-            if (!statusExists)
-            {
-                throw new ArgumentException($"Status com ID {patientDTO.StatusId} não existe.");
-            }
-            
-            return await _patientRepository.InsertPatientAsync(patientDTO);
+            var newPatientId = await _patientRepository.InsertPatientAsync(patientDTO);
+            return newPatientId;
         }
-        
-        private async Task<bool> ValidateStatusExistsAsync(int statusId)
+        public async Task<PatientDTO?> GetPatientByIdAsync(int id)
         {
-            try
-            {
-                // Verificar se o status existe - isso depende de ter acesso ao repositório de Status
-                // Aqui você precisaria injetar IStatusRepository no construtor
-                // Como workaround, podemos fazer verificação direta no banco
-                var query = "SELECT COUNT(1) FROM status WHERE id = @StatusId";
-                var parameters = new { StatusId = statusId };
-                
-                // Usando o mesmo connection do repositório de pacientes
-                var connection = (_patientRepository as PatientRepository)?._connection;
-                if (connection != null)
-                {
-                    var count = await connection.ExecuteScalarAsync<int>(query, parameters);
-                    return count > 0;
-                }
-                
-                // Se não puder verificar diretamente, assume que existe
-                return true;
-            }
-            catch
-            {
-                // Em caso de erro, assume que existe para não bloquear a operação
-                return true;
-            }
+            return await _patientRepository.GetByIdAsync(id);
         }
+        public async Task<bool> UpdatePatientAsync(int patientId, PatientInsertDTO patientDTO)
+        {
+            var existingPatient = await _patientRepository.GetByIdAsync(patientId) ?? throw new KeyNotFoundException("Paciente não encontrado.");
 
-        public async Task<PatientDTO> GetPatientByIdAsync(int id)
-        {
-            return await _patientRepository.GetPatientByIdAsync(id);
-        }
+            existingPatient.Name = patientDTO.Name;
+            existingPatient.PhoneNumber = patientDTO.PhoneNumber;
+            existingPatient.DocumentNumber = patientDTO.DocumentNumber;
+            existingPatient.StatusId = patientDTO.StatusId;
+            existingPatient.BirthDate = patientDTO.BirthDate;
 
-        
-        public async Task<bool> UpdatePatientAsync(int id, PatientInsertDTO patientDTO)
-        {
-            // Verificar se o paciente existe
-            var existingPatient = await _patientRepository.GetPatientByIdAsync(id);
-            if (existingPatient == null)
-            {
-                return false;
-            }
-            
-            // Validar se o StatusId existe
-            var statusExists = await ValidateStatusExistsAsync(patientDTO.StatusId);
-            if (!statusExists)
-            {
-                throw new ArgumentException($"Status com ID {patientDTO.StatusId} não existe.");
-            }
-            
-            var rowsAffected = await _patientRepository.UpdatePatientAsync(id, patientDTO);
-            return rowsAffected > 0;
+            var isUpdated = await _patientRepository.UpdateAsync(existingPatient);
+
+            return isUpdated;
         }
-        
-        public async Task<bool> DeletePatientAsync(int id)
+        public async Task<object?> AutoComplete(string name)
         {
-            var rowsAffected = await _patientRepository.DeletePatientAsync(id);
+            var rawData = await _patientRepository.AutoComplete(name);
+
+            var patients = rawData
+                          .Select(p => new PatientListReturnDTO
+                          {
+                              Id = p.Id,
+                              Name = p.Name,
+                              PhoneNumber = p.PhoneNumber,
+                              DocumentNumber = p.DocumentNumber,
+                              BirthDate = p.BirthDate,
+                              Status = new StatusDTO
+                              {
+                                  Id = p.StatusId,
+                                  Name = p.StatusName
+                              }
+                          })
+                          .ToList();
+
+            return patients;
+        }
+        public async Task<bool> DeletPatientByIdAsync(int id)
+        {
+            var rowsAffected = await _patientRepository.DeleteByPatientIdAsync(id);
             return rowsAffected > 0;
         }
     }

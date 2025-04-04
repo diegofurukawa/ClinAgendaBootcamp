@@ -1,4 +1,4 @@
-namespace ClinAgendaBootcamp.src.Core.Entities
+namespace ClinAgendaBootcamp
 {
     public class Appointment
     {

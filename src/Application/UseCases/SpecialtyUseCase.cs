@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using ClinAgendaBootcamp.src.Application.DTOs.Specialty;
 using ClinAgendaBootcamp.src.Core.Interfaces;
 
-namespace ClinAgendaBootcamp.src.Application.SpecialtyUseCase
+namespace ClinAgendaBootcamp.src.Application.UseCases
 {
     public class SpecialtyUseCase
     {
@@ -16,10 +16,9 @@ namespace ClinAgendaBootcamp.src.Application.SpecialtyUseCase
             _specialtyRepository = specialtyRepository;
         }
 
-        public async Task<object> GetSpecialtyAsync(int itemsPerPage, int page)
+        public async Task<object> GetSpecialtyAsync(string name, int itemsPerPage, int page)
         {
-            var (total, rawData) = await _specialtyRepository.GetAllSpecialtyAsync(itemsPerPage, page);
-
+            var (total, rawData) = await _specialtyRepository.GetAllAsync(name, itemsPerPage, page);
             return new
             {
                 total,
@@ -30,32 +29,20 @@ namespace ClinAgendaBootcamp.src.Application.SpecialtyUseCase
         public async Task<int> CreateSpecialtyAsync(SpecialtyInsertDTO specialtyDTO)
         {
             var newSpecialtyId = await _specialtyRepository.InsertSpecialtyAsync(specialtyDTO);
-
             return newSpecialtyId;
         }
-        
         public async Task<SpecialtyDTO?> GetSpecialtyByIdAsync(int id)
         {
-            return await _specialtyRepository.GetSpecialtyByIdAsync(id);
+            return await _specialtyRepository.GetByIdAsync(id);
         }
-        
-        // New method to handle a list of specialty IDs
-        public async Task<List<SpecialtyDTO>> GetSpecialtiesByIdsAsync(List<int> specialtyIds)
+        public async Task<IEnumerable<SpecialtyDTO>> GetSpecialtiesByIds(List<int> id)
         {
-            // If repository doesn't have a method to get multiple specialties by ids,
-            // we can retrieve them one by one
-            var specialties = new List<SpecialtyDTO>();
-            
-            foreach (var id in specialtyIds)
-            {
-                var specialty = await _specialtyRepository.GetSpecialtyByIdAsync(id);
-                if (specialty != null)
-                {
-                    specialties.Add(specialty);
-                }
-            }
-            
-            return specialties;
+            return await _specialtyRepository.GetSpecialtiesByIds(id);
+        }
+        public async Task<bool> DeleteSpecialtyByIdAsync(int id)
+        {            
+            var rowsAffected = await _specialtyRepository.DeleteSpecialtyAsync(id);
+            return rowsAffected > 0;
         }
     }
 }

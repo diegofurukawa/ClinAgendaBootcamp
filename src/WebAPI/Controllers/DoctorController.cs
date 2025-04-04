@@ -2,13 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-//Importacoes de DTOs
 using ClinAgendaBootcamp.src.Application.DTOs.Doctor;
-//Importacoes de UseCase
-using ClinAgendaBootcamp.src.Application.DoctorUseCase;
-using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
-using ClinAgendaBootcamp.src.Application.StatusUseCase;
-//Importacoes de Arquitetura
+using ClinAgendaBootcamp.src.Application.UseCases;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinAgendaBootcamp.src.WebAPI.Controllers
@@ -20,21 +15,17 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
         private readonly DoctorUseCase _doctorUseCase;
         private readonly StatusUseCase _statusUseCase;
         private readonly SpecialtyUseCase _specialtyUseCase;
+        private readonly AppointmentUseCase _appointmentUseCase;
 
-        public DoctorController(DoctorUseCase doctorUseCase, StatusUseCase statusUseCase, SpecialtyUseCase specialtyUseCase)
+        public DoctorController(DoctorUseCase doctorUseCase, StatusUseCase statusUseCase, SpecialtyUseCase specialtyUseCase, AppointmentUseCase appointmentUseCase)
         {
             _doctorUseCase = doctorUseCase;
             _statusUseCase = statusUseCase;
             _specialtyUseCase = specialtyUseCase;
+            _appointmentUseCase = appointmentUseCase;
         }
         [HttpGet("list")]
-        public async Task<IActionResult> GetDoctors(
-            [FromQuery] string? name, 
-            [FromQuery] int? specialtyId, 
-            [FromQuery] int? statusId, 
-            [FromQuery] int itemsPerPage = 10, 
-            [FromQuery] int page = 1
-            )
+        public async Task<IActionResult> GetDoctors([FromQuery] string? name, [FromQuery] int? specialtyId, [FromQuery] int? statusId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
         {
             try
             {
@@ -46,16 +37,6 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
-        
-        [HttpGet("listById/{id}")]
-        public async Task<IActionResult> GetDoctorByIdAsync(int id)
-        {
-            var doctor = await _doctorUseCase.GetDoctorByIdAsync(id);
-            if (doctor == null) return NotFound();
-            return Ok(doctor);
-        }
-
-
         [HttpPost("insert")]
         public async Task<IActionResult> CreateDoctorAsync([FromBody] DoctorInsertDTO doctor)
         {
@@ -65,7 +46,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 if (hasStatus == null)
                     return BadRequest($"O status com ID {doctor.StatusId} não existe.");
 
-                var specialties = await _specialtyUseCase.GetSpecialtiesByIdsAsync(doctor.Specialty);
+                var specialties = await _specialtyUseCase.GetSpecialtiesByIds(doctor.Specialty);
 
                 var notFoundSpecialties = doctor.Specialty.Except(specialties.Select(s => s.Id)).ToList();
 
@@ -85,8 +66,6 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
                 return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
             }
         }
-
-
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateDoctorAsync(int id, [FromBody] DoctorInsertDTO doctor)
         {
@@ -96,7 +75,7 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             if (hasStatus == null)
                 return BadRequest($"O status com ID {doctor.StatusId} não existe.");
 
-            var specialties = await _specialtyUseCase.GetSpecialtiesByIdsAsync(doctor.Specialty);
+            var specialties = await _specialtyUseCase.GetSpecialtiesByIds(doctor.Specialty);
 
             var notFoundSpecialties = doctor.Specialty.Except(specialties.Select(s => s.Id)).ToList();
 
@@ -113,6 +92,38 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             return Ok(infosDoctorUpdate);
 
         }
+        [HttpGet("listById/{id}")]
+        public async Task<IActionResult> GetDoctorByIdAsync(int id)
+        {
+            var doctor = await _doctorUseCase.GetDoctorByIdAsync(id);
+            if (doctor == null) return NotFound();
+            return Ok(doctor);
+        }
+        [HttpDelete("delete/{id}")]
+        public async Task<IActionResult> DeleteDoctorAsync(int id)
+        {
+            try
+            {
+                var doctorInfo = await _doctorUseCase.GetDoctorByIdAsync(id);
 
+                var appointment = await _appointmentUseCase.GetAppointmentsAsync(null, doctorName: doctorInfo.Name, null, 1, 1);
+
+                if (appointment.Total > 0)
+                    return NotFound($"Erro ao deletar, Doutor com agendamento marcado");
+
+                var success = await _doctorUseCase.DeleteDoctorByIdAsync(id);
+
+                if (!success)
+                {
+                    return NotFound($"Doutor com ID {id} não encontrado.");
+                }
+
+                return Ok("Doutor deletado com sucesso");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

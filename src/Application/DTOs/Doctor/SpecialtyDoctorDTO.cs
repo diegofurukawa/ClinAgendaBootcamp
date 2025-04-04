@@ -11,6 +11,5 @@ namespace ClinAgendaBootcamp.src.Application.DTOs.Doctor
         public int SpecialtyId { get; set; }
         public required string SpecialtyName { get; set; }
         public int ScheduleDuration { get; set; }
-
     }
 }

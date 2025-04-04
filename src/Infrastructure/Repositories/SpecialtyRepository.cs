@@ -1,15 +1,12 @@
-// Importa funcionalidades para manipulação de strings, incluindo StringBuilder.
-using System.Text; 
-// Importa os DTOs relacionados a Specialty.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using ClinAgendaBootcamp.src.Application.DTOs.Specialty;
-// Importa a interface que o repositório implementa.
-using ClinAgendaBootcamp.src.Core.Interfaces; 
-// Biblioteca para conexão com MySQL.
-using MySql.Data.MySqlClient; 
-// Biblioteca para acesso a banco de dados de forma simplificada.
+using ClinAgendaBootcamp.src.Core.Interfaces;
 using Dapper;
-using ClinAgendaBootcamp.src.Core.Entities;
-
+using MySql.Data.MySqlClient;
 
 namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 {
@@ -21,26 +18,32 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         {
             _connection = connection;
         }
-        public async Task<SpecialtyDTO> GetSpecialtyByIdAsync(int id)
+        public async Task<SpecialtyDTO?> GetByIdAsync(int id)
         {
             const string query = @"
                 SELECT 
                     ID, 
                     NAME,
                     SCHEDULEDURATION 
-                FROM specialty
+                FROM SPECIALTY
                 WHERE ID = @Id";
 
             var specialty = await _connection.QueryFirstOrDefaultAsync<SpecialtyDTO>(query, new { Id = id });
 
             return specialty;
         }
-        public async Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllSpecialtyAsync(int? itemsPerPage, int? page)
+        public async Task<(int total, IEnumerable<SpecialtyDTO> specialtys)> GetAllAsync(string? name, int? itemsPerPage, int? page)
         {
             var queryBase = new StringBuilder(@"
-                FROM specialty S WHERE 1 = 1");
+                FROM SPECIALTY S WHERE 1 = 1");
 
             var parameters = new DynamicParameters();
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                queryBase.Append(" AND S.NAME LIKE @Name");
+                parameters.Add("Name", $"%{name}%");
+            }
 
             var countQuery = $"SELECT COUNT(DISTINCT S.ID) {queryBase}";
             int total = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
@@ -62,7 +65,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<int> InsertSpecialtyAsync(SpecialtyInsertDTO specialtyInsertDTO)
         {
             string query = @"
-            INSERT INTO specialty (NAME, SCHEDULEDURATION) 
+            INSERT INTO SPECIALTY (NAME, SCHEDULEDURATION) 
             VALUES (@Name, @Scheduleduration);
             SELECT LAST_INSERT_ID();";
             return await _connection.ExecuteScalarAsync<int>(query, specialtyInsertDTO);
@@ -70,7 +73,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<int> DeleteSpecialtyAsync(int id)
         {
             string query = @"
-            DELETE FROM specialty
+            DELETE FROM SPECIALTY
             WHERE ID = @Id";
 
             var parameters = new { Id = id };
@@ -79,12 +82,20 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
 
             return rowsAffected;
         }
-
-        public Task<int> InsertSpecialtyAsync(Specialty specialty)
+        public async Task<IEnumerable<SpecialtyDTO>> GetSpecialtiesByIds(List<int> specialtiesId)
         {
-            throw new NotImplementedException();
+            var query = @"
+                SELECT 
+                    S.ID, 
+                    S.NAME,
+                    S.SCHEDULEDURATION 
+                FROM SPECIALTY S
+                WHERE S.ID IN @SPECIALTIESID";
+
+            var parameters = new { SpecialtiesID = specialtiesId };
+
+            return await _connection.QueryAsync<SpecialtyDTO>(query, parameters);
         }
     }
-
 
 }

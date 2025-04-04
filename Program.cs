@@ -1,9 +1,8 @@
 using ClinAgendaBootcamp.src.Core.Interfaces;
 using ClinAgendaBootcamp.src.Infrastructure.Repositories;
-using ClinAgendaBootcamp.src.Application.StatusUseCase;
-using ClinAgendaBootcamp.src.Application.SpecialtyUseCase;
+using ClinAgendaBootcamp.src.Application.UseCases;
 using MySql.Data.MySqlClient;
-using ClinAgendaBootcamp.src.Application.PatientUseCase;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +30,27 @@ builder.Services.AddScoped<SpecialtyUseCase>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<PatientUseCase>();
 
+// Doctor
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IDoctorSpecialtyRepository, DoctorSpecialtyRepository>();
+builder.Services.AddScoped<DoctorUseCase>();
+
+// Appointment
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<AppointmentUseCase>();
+
+
+// CORS Policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder => builder
+                    // .WithOrigins("http://localhost:3000") // Adicione a origem do seu front-end
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -40,6 +60,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAllOrigins");
 app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();

@@ -8,176 +8,86 @@ using ClinAgendaBootcamp.src.Application.DTOs.Patient;
 using ClinAgendaBootcamp.src.Application.DTOs.Specialty;
 using ClinAgendaBootcamp.src.Core.Interfaces;
 
-namespace ClinAgendaBootcamp.src.Application.AppointmentUseCase
+namespace ClinAgendaBootcamp.src.Application.UseCases
 {
     public class AppointmentUseCase
     {
         private readonly IAppointmentRepository _appointmentRepository;
-        private readonly IPatientRepository _patientRepository;
-        private readonly IDoctorRepository _doctorRepository;
-        private readonly ISpecialtyRepository _specialtyRepository;
-
-        public AppointmentUseCase(
-            IAppointmentRepository appointmentRepository,
-            IPatientRepository patientRepository,
-            IDoctorRepository doctorRepository,
-            ISpecialtyRepository specialtyRepository)
+        public AppointmentUseCase(IAppointmentRepository appointmentRepository)
         {
             _appointmentRepository = appointmentRepository;
-            _patientRepository = patientRepository;
-            _doctorRepository = doctorRepository;
-            _specialtyRepository = specialtyRepository;
         }
-
-        public async Task<object> GetAppointmentsAsync(
-            string? patientName, 
-            string? doctorName, 
-            int? specialtyId, 
-            int itemsPerPage, 
-            int page
-            )
+        public async Task<AppointmentResponseDTO> GetAppointmentsAsync(string? patientName, string? doctorName, int? specialtyId, int itemsPerPage, int page)
         {
-            var (total, appointments) = await _appointmentRepository.GetAppointmentsAsync(
-                patientName, 
-                doctorName, 
-                specialtyId, 
-                itemsPerPage, 
-                page
-            );
+            var (total, rawData) = await _appointmentRepository.GetAppointmentsAsync(patientName, doctorName, specialtyId, itemsPerPage, page);
+            var appointmentMap = new Dictionary<int, AppointmentListReturnDTO>();
 
-            var appointmentsList = appointments.Select(a => new AppointmentListReturnDTO
+            foreach (var item in rawData)
             {
-                Id = a.Id,
-                Patient = new AppointmentPatientReturnDTO
+                if (!appointmentMap.ContainsKey(item.Id))
                 {
-                    Name = a.PatientName,
-                    DocumentNumber = a.PatientDocument
-                },
-                Doctor = new AppointmentDoctorReturnDTO
-                {
-                    Name = a.DoctorName
-                },
-                Specialty = new SpecialtyDTO
-                {
-                    Id = a.SpecialtyId,
-                    Name = a.SpecialtyName,
-                    ScheduleDuration = a.ScheduleDuration
-                },
-                AppointmentDate = a.AppointmentDate
-            }).ToList();
+                    appointmentMap[item.Id] = new AppointmentListReturnDTO
+                    {
+                        Id = item.Id,
+                        Patient = new PatientReturnAppointmentDTO
+                        {
+                            Name = item.PatientName,
+                            documentNumber = item.PatientDocument
+                        },
+                        Doctor = new DoctorReturnAppointmentDTO
+                        {
+                            Name = item.DoctorName
+                        },
+                        Specialty = new SpecialtyDTO
+                        {
+                            Id = item.SpecialtyId,
+                            Name = item.SpecialtyName
+                        },
+                        AppointmentDate = item.AppointmentDate
+                    };
+                }
+            }
 
-            return new
+            return new AppointmentResponseDTO
             {
-                total,
-                items = appointmentsList
+                Total = total,
+                Items = appointmentMap.Values.ToList()
             };
         }
 
         public async Task<int> CreateAppointmentAsync(AppointmentDTO appointmentDTO)
         {
-            // Valida que Paciente exista
-            var patient = await _patientRepository.GetPatientByIdAsync(appointmentDTO.PatientId);
-            if (patient == null)
-            {
-                throw new ArgumentException($"Patient with ID {appointmentDTO.PatientId} does not exist.");
-            }
+            var newAppointmentId = await _appointmentRepository.InsertAppointmentAsync(appointmentDTO);
 
-            // Valida que o doutor exista e tenha especialidade
-            var doctorData = (await _doctorRepository.GetDoctorByIdAsync(appointmentDTO.DoctorId)).ToList();
-            if (!doctorData.Any())
-            {
-                throw new ArgumentException($"Doctor with ID {appointmentDTO.DoctorId} does not exist.");
-            }
-
-            // check da especialidade do Doutor
-            var doctorSpecialties = doctorData.Select(d => d.SpecialtyId).Distinct().ToList();
-            if (!doctorSpecialties.Contains(appointmentDTO.SpecialtyId))
-            {
-                throw new ArgumentException($"Doctor with ID {appointmentDTO.DoctorId} does not have the specialty with ID {appointmentDTO.SpecialtyId}.");
-            }
-
-            // Valida se especialidade existe
-            var specialty = await _specialtyRepository.GetSpecialtyByIdAsync(appointmentDTO.SpecialtyId);
-            if (specialty == null)
-            {
-                throw new ArgumentException($"Specialty with ID {appointmentDTO.SpecialtyId} does not exist.");
-            }
-
-            // Valida formato de data do appointment
-            if (!DateTime.TryParse(appointmentDTO.AppointmentDate, out DateTime appointmentDate))
-            {
-                throw new ArgumentException("The appointment date must be in a valid format (YYYY-MM-DD HH:MM:SS).");
-            }
-
-            // Insera appointment
-            return await _appointmentRepository.InsertAppointmentAsync(appointmentDTO);
+            return newAppointmentId;
         }
-
         public async Task<AppointmentDTO?> GetAppointmentByIdAsync(int id)
         {
-            return await _appointmentRepository.GetAppointmentByIdAsync(id);
+            return await _appointmentRepository.GetByIdAsync(id);
         }
-
-        public async Task<bool> UpdateAppointmentAsync(int id, AppointmentInsertDTO appointmentDTO)
+        public async Task<bool> UpdateAppointmentAsync(int appointmentId, AppointmentDTO appointmentDTO)
         {
-            // Validate if appointment exists
-            var existingAppointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
-            if (existingAppointment == null)
-            {
-                return false;
-            }
 
-            // Validate if Patient exists
-            var patient = await _patientRepository.GetPatientByIdAsync(appointmentDTO.PatientId);
-            if (patient == null)
+            var updatedPatient = new AppointmentInsertDTO
             {
-                throw new ArgumentException($"Patient with ID {appointmentDTO.PatientId} does not exist.");
-            }
+                Id = appointmentId,
+                PatientId = appointmentDTO.PatientId,
+                DoctorId = appointmentDTO.DoctorId,
+                SpecialtyId = appointmentDTO.SpecialtyId,
+                AppointmentDate = appointmentDTO.AppointmentDate,
+                Observation = appointmentDTO.Observation
+            };
 
-            // Validate if Doctor exists and has the Specialty
-            var doctorData = (await _doctorRepository.GetDoctorByIdAsync(appointmentDTO.DoctorId)).ToList();
-            if (!doctorData.Any())
-            {
-                throw new ArgumentException($"Doctor with ID {appointmentDTO.DoctorId} does not exist.");
-            }
+            var isUpdated = await _appointmentRepository.UpdateAsync(updatedPatient);
 
-            // Check if doctor has the specified specialty
-            var doctorSpecialties = doctorData.Select(d => d.SpecialtyId).Distinct().ToList();
-            if (!doctorSpecialties.Contains(appointmentDTO.SpecialtyId))
-            {
-                throw new ArgumentException($"Doctor with ID {appointmentDTO.DoctorId} does not have the specialty with ID {appointmentDTO.SpecialtyId}.");
-            }
-
-            // Validate if Specialty exists
-            var specialty = await _specialtyRepository.GetSpecialtyByIdAsync(appointmentDTO.SpecialtyId);
-            if (specialty == null)
-            {
-                throw new ArgumentException($"Specialty with ID {appointmentDTO.SpecialtyId} does not exist.");
-            }
-
-            // Validate appointment date format
-            if (!DateTime.TryParse(appointmentDTO.AppointmentDate, out DateTime appointmentDate))
-            {
-                throw new ArgumentException("The appointment date must be in a valid format (YYYY-MM-DD HH:MM:SS).");
-            }
-
-            // Update appointment
-            appointmentDTO.Id = id;
-            return await _appointmentRepository.UpdateAppointmentAsync(appointmentDTO);
+            return isUpdated;
         }
-
-        public async Task<bool> DeleteAppointmentAsync(int id)
+        public async Task<bool> DeleteAppointmentByIdAsync(int id)
         {
-            // Check if appointment exists
-            var existingAppointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
-            if (existingAppointment == null)
-            {
-                return false;
-            }
+            var rowsAffected = await _appointmentRepository.DeleteAsync(id);
 
-            // Delete appointment
-            var rowsAffected = await _appointmentRepository.DeleteAppointmentAsync(id);
             return rowsAffected > 0;
         }
+
     }
 }

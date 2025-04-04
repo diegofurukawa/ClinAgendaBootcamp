@@ -1,63 +1,41 @@
-using ClinAgendaBootcamp.src.Application.DTOs.Patient;
-using ClinAgendaBootcamp.src.Application.PatientUseCase;
-using ClinAgendaBootcamp.src.Application.StatusUseCase;
-using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using ClinAgendaBootcamp.src.Application.DTOs.Patient;
+using ClinAgendaBootcamp.src.Application.UseCases;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ClinAgendaBootcamp.src.WebAPI.Controllers
 {
     [ApiController]
-    [Route("api/Patient")]
+    [Route("api/patient")]
     public class PatientController : ControllerBase
     {
         private readonly PatientUseCase _patientUseCase;
         private readonly StatusUseCase _statusUseCase;
+        private readonly AppointmentUseCase _appointmentUseCase;
 
-        public PatientController(PatientUseCase patientService, StatusUseCase statusUseCase)
+        public PatientController(PatientUseCase patientService, StatusUseCase statusUseCase, AppointmentUseCase appointmentUseCase)
         {
             _patientUseCase = patientService;
             _statusUseCase = statusUseCase;
+            _appointmentUseCase = appointmentUseCase;
         }
-
         [HttpGet("list")]
-
-        public async Task<IActionResult> GetPatientsAsync(
-            [FromQuery] string? name, 
-            [FromQuery] string? documentNumber, 
-            [FromQuery] int? patientId,
-            [FromQuery] int itemsPerPage = 10, 
-            [FromQuery] int page = 1
-            )
+        public async Task<IActionResult> GetPatientsAsync([FromQuery] string? name, [FromQuery] string? documentNumber, [FromQuery] int? statusId, [FromQuery] int itemsPerPage = 10, [FromQuery] int page = 1)
         {
             try
             {
-                var result = await _patientUseCase.GetPatientsAsync(name, documentNumber, patientId, itemsPerPage, page);
+                var result = await _patientUseCase.GetPatientsAsync(name, documentNumber, statusId, itemsPerPage, page);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno do servidor: {ex.Message}");
+                return StatusCode(500, $"{ex.Message}");
             }
         }
-
-        [HttpGet("listById/{id}")]
-        public async Task<IActionResult> GetPatientByIdAsync(int id)
-        {
-            try
-            {
-                var doctor = await _patientUseCase.GetPatientByIdAsync(id);
-                if (doctor == null) return NotFound();
-                return Ok(doctor);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Erro interno do Servidor: {ex.Message}");
-            }
-        }
-
         [HttpPost("insert")]
-        // public async Task<IActionResult> CreatePatientAsync([FromBody] PatientInsertDTO patient)
         public async Task<IActionResult> CreatePatientAsync([FromBody] PatientInsertDTO patient)
         {
             try
@@ -78,62 +56,82 @@ namespace ClinAgendaBootcamp.src.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro interno do Servidor: {ex.Message}");
+                return StatusCode(500, $"={ex.Message}");
             }
         }
-        
+        [HttpGet("listById/{id}")]
+        public async Task<IActionResult> GetPatientByIdAsync(int id)
+        {
+            try
+            {
+                var patient = await _patientUseCase.GetPatientByIdAsync(id);
+                if (patient == null) return NotFound();
+                return Ok(patient);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"{ex.Message}");
+            }
+        }
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdatePatientAsync(int id, [FromBody] PatientInsertDTO patient)
         {
             try
             {
-                if (patient == null || string.IsNullOrWhiteSpace(patient.Name))
-                {
-                    return BadRequest("Os dados do paciente são inválidos.");
-                }
-                
-                // Validar formato da data
-                if (!DateTime.TryParse(patient.BirthDate, out DateTime birthDate))
-                {
-                    return BadRequest("A data de nascimento deve estar no formato YYYY-MM-DD.");
-                }
-                
-                // Formatar a data no formato aceito pelo MySQL
-                patient.BirthDate = birthDate.ToString("yyyy-MM-dd");
-                
-                var success = await _patientUseCase.UpdatePatientAsync(id, patient);
-                
-                if (!success)
-                {
-                    return NotFound($"Paciente com ID {id} não encontrado ou não foi possível atualizar.");
-                }
-                
-                var updatedPatient = await _patientUseCase.GetPatientByIdAsync(id);
-                return Ok(updatedPatient);
+                if (patient == null) return BadRequest();
+
+                var hasStatus = await _statusUseCase.GetStatusByIdAsync(patient.StatusId);
+                if (hasStatus == null)
+                    return BadRequest($"O status ID {patient.StatusId} não existe");
+
+                bool updated = await _patientUseCase.UpdatePatientAsync(id, patient);
+                if (!updated) return NotFound("Paciente não encontrado.");
+
+                var infosPatientUpdate = await _patientUseCase.GetPatientByIdAsync(id);
+                return Ok(infosPatientUpdate);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Erro ao atualizar paciente: {ex.Message}");
+                return StatusCode(500, $"{ex.Message}");
             }
         }
-        
+        [HttpGet("autocomplete")]
+        public async Task<IActionResult> AutoComplete([FromQuery] string? name)
+        {
+            try
+            {
+                var result = await _patientUseCase.AutoComplete(name);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"{ex.Message}");
+            }
+        }
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeletePatientAsync(int id)
         {
             try
             {
-                var success = await _patientUseCase.DeletePatientAsync(id);
-                
+                var patientInfo = await _patientUseCase.GetPatientByIdAsync(id);
+
+                var appointment = await _appointmentUseCase.GetAppointmentsAsync(patientName: patientInfo.Name, null, null, 1, 1);
+
+                if (appointment.Total > 0)
+                    return NotFound($"Erro ao deletar, Paciente com agendamento marcado");
+
+                var success = await _patientUseCase.DeletPatientByIdAsync(id);
+
                 if (!success)
                 {
-                    return NotFound($"Paciente com ID {id} não encontrado ou não foi possível excluir.");
+                    return NotFound($"Paciente com ID {id} não encontrado.");
                 }
-                
-                return NoContent();
+
+                return Ok("Paciente deletado com sucesso");
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return StatusCode(500, $"Erro ao excluir paciente: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
             }
         }
     }
