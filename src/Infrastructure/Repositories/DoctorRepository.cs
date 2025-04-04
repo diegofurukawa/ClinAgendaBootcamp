@@ -87,7 +87,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<int> InsertDoctorAsync(DoctorInsertDTO doctor)
         {
             string query = @"
-            INSERT INTO Doctor (Name, StatusId) 
+            INSERT INTO DOCTOR (Name, StatusId) 
             VALUES (@Name, @StatusId);
             SELECT LAST_INSERT_ID();";
             return await _connection.ExecuteScalarAsync<int>(query, doctor);
@@ -127,7 +127,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<bool> UpdateAsync(DoctorDTO doctor)
         {
             string query = @"
-            UPDATE Doctor SET 
+            UPDATE DOCTOR SET 
                 Name = @Name,
                 StatusId = @StatusId
             WHERE Id = @Id;";

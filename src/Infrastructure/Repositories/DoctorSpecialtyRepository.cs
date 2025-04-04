@@ -33,7 +33,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
         public async Task DeleteByDoctorIdAsync(int doctorId)
         {
-            string query = "DELETE FROM doctor_specialty WHERE DoctorId = @DoctorId";
+            string query = "DELETE FROM DOCTOR_SPECIALTY WHERE DoctorId = @DoctorId";
             await _connection.ExecuteAsync(query, new { DoctorId = doctorId });
         }
     }

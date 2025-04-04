@@ -85,7 +85,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<int> InsertPatientAsync(PatientInsertDTO patient)
         {
             string query = @"
-            INSERT INTO Patient (name, phoneNumber, documentNumber, statusId, birthDate) 
+            INSERT INTO PATIENT (name, phoneNumber, documentNumber, statusId, birthDate) 
             VALUES (@Name, @PhoneNumber, @DocumentNumber, @StatusId, @BirthDate);
             SELECT LAST_INSERT_ID();";
             return await _connection.ExecuteScalarAsync<int>(query, patient);
@@ -93,7 +93,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<bool> UpdateAsync(PatientDTO patient)
         {
             string query = @"
-            UPDATE Patient SET 
+            UPDATE PATIENT SET 
                 Name = @Name,
                 phoneNumber = @PhoneNumber,
                 documentNumber = @DocumentNumber,
@@ -105,7 +105,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
         public async Task<int> DeleteByPatientIdAsync(int id)
         {
-            string query = "DELETE FROM Patient WHERE ID = @Id";
+            string query = "DELETE FROM PATIENT WHERE ID = @Id";
 
             var parameters = new { Id = id };
 

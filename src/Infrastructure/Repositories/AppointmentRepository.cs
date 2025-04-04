@@ -21,7 +21,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<(int total, IEnumerable<AppointmentListDTO> appointment)> GetAppointmentsAsync(string? patientName, string? doctorName, int? specialtyId, int itemsPerPage, int page)
         {
             var queryBase = new StringBuilder(@"     
-                   FROM Appointment A
+                   FROM APPOINTMENT A
                     INNER JOIN PATIENT P ON P.ID = A.PATIENTID
                     INNER JOIN DOCTOR D ON D.ID = A.DOCTORID
                     INNER JOIN SPECIALTY S ON S.ID = A.SPECIALTYID ");
@@ -73,20 +73,20 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         public async Task<int> InsertAppointmentAsync(AppointmentDTO appointment)
         {
             string query = @"
-            INSERT INTO Appointment (patientId, doctorId, specialtyId, appointmentDate, observation)
+            INSERT INTO APPOINTMENT (patientId, doctorId, specialtyId, appointmentDate, observation)
             VALUES (@patientId, @doctorId, @specialtyId, @appointmentDate, @observation);
             SELECT LAST_INSERT_ID();";
             return await _connection.ExecuteScalarAsync<int>(query, appointment);
         }
         public async Task<AppointmentDTO?> GetByIdAsync(int id)
         {
-            string query = "SELECT * FROM Appointment WHERE Id = @Id;";
+            string query = "SELECT * FROM APPOINTMENT WHERE Id = @Id;";
             return await _connection.QueryFirstOrDefaultAsync<AppointmentDTO>(query, new { Id = id });
         }
         public async Task<bool> UpdateAsync(AppointmentInsertDTO patient)
         {
             string query = @"
-            UPDATE Appointment SET 
+            UPDATE APPOINTMENT SET 
                 patientId = @PatientId,
                 doctorId = @DoctorId,
                 specialtyId = @SpecialtyId,
@@ -98,7 +98,7 @@ namespace ClinAgendaBootcamp.src.Infrastructure.Repositories
         }
         public async Task<int> DeleteAsync(int appointmentId)
         {
-            string query = "DELETE FROM Appointment WHERE ID = @AppointmentId";
+            string query = "DELETE FROM APPOINTMENT WHERE ID = @AppointmentId";
             var rowsAffected = await _connection.ExecuteAsync(query, new { AppointmentId = appointmentId });
             return rowsAffected;
         }
